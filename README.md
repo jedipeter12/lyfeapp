@@ -1,52 +1,19 @@
-# Project Name
+# Lyfe
 
-Lyfe app is a comprehensive life maintenance/tracker app, not for habits, but for life admin.
+Lyfe is an early-stage life maintenance project for remembering, scheduling, and recording recurring responsibilities. It is intended to reduce the mental work of life administration rather than track habits.
 
 ## Status
 
-- Stage: Idea
-- Current focus: Structure
-- Last major milestone:
+The repository currently contains product and engineering documentation, a documentation checker, and CI for that checker. There is no application, selected production stack, build, or runtime test suite yet. MVP and architecture details are proposals pending owner decisions.
 
-## Quick Start
+## Start here
 
-Document the minimum steps required to run the project locally.
+- [Product direction and MVP proposal](docs/PRODUCT.md)
+- [Current state and architecture proposal](docs/ARCHITECTURE.md)
+- [Proposed domain and recurrence specification](docs/DOMAIN_MODEL.md)
+- [Accepted decisions and open choices](docs/DECISIONS.md)
+- [Current priorities](docs/ROADMAP.md) and [task backlog](docs/BACKLOG.md)
+- [Local verification and contribution workflow](docs/DEVELOPMENT.md)
+- [Standing coding-agent instructions](AGENTS.md)
 
-```bash
-# Example only
-git clone <rhttps://github.com/jedipeter12/lyfeapp>
-cd <repo-folder>
-```
-
-Add project-specific install/build/run commands here.
-
-## Project Documentation
-
-- [`docs/PRODUCT.md`](docs/PRODUCT.md) — product purpose, users, scope, and requirements
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — technical structure and major system choices
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — important decisions and why they were made
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — completed, current, and planned work
-- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — local development, testing, deployment, and conventions
-- [`AGENTS.md`](AGENTS.md) — standing instructions for AI coding agents
-
-## Repository Structure
-
-```text
-project/
-├── README.md
-├── AGENTS.md
-├── docs/
-│   ├── PRODUCT.md
-│   ├── ARCHITECTURE.md
-│   ├── DECISIONS.md
-│   ├── ROADMAP.md
-│   └── DEVELOPMENT.md
-├── src/
-└── tests/
-```
-
-> The source/test layout can change to match the platform. For a native iOS app, for example, Xcode will normally create app, unit-test, and UI-test target folders instead of requiring `src/` and `tests/`.
-
-## Working Rule
-
-The repository is the source of truth. Important product, technical, and architectural knowledge should be written into the repository rather than existing only in an AI conversation.
+Run the repository's current check with `python3 scripts/check_repo.py`. Application setup commands will be added after a stack is approved and implemented.

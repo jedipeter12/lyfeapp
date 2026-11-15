@@ -1,0 +1,24 @@
+name: Verify repository
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check documentation
+        run: python3 scripts/check_repo.py
+      - name: Test recurrence prototype
+        run: python3 -m unittest discover -s tests -p 'test_*.py'

@@ -1,62 +1,19 @@
-# AI Agent Instructions
+# Lyfe agent instructions
 
-These instructions apply to any AI coding agent working in this repository.
+Lyfe is an early-stage life maintenance app for recurring responsibilities, not a general habit tracker. `docs/PRODUCT.md` records the approved direction; its MVP proposal and `docs/ARCHITECTURE.md` are recommendations until the owner accepts them. `docs/DECISIONS.md` records accepted decisions. No application stack or production data model has been approved.
 
-## Before Making Changes
+## Start each task
 
-1. Read `README.md`.
-2. Read the relevant files in `docs/`.
-3. Inspect the existing code before proposing architecture changes.
-4. Check `docs/DECISIONS.md` before reversing or replacing an existing decision.
-5. Check `docs/ROADMAP.md` to understand the current project state.
+1. Identify the assigned task and inspect the relevant files and Git state before editing.
+2. Read `README.md`, then only documentation relevant to the task: product behavior in `docs/PRODUCT.md`, architecture and domain work in `docs/ARCHITECTURE.md` and `docs/DOMAIN_MODEL.md`, status in `docs/ROADMAP.md`, and commands in `docs/DEVELOPMENT.md`.
+3. Check `docs/DECISIONS.md` before changing an established choice. Use `docs/BACKLOG.md` for independently executable work.
 
-## General Rules
+## Work and verify
 
-- Treat the repository as the source of truth.
-- Do not invent requirements that are not supported by `docs/PRODUCT.md` or explicit user instructions.
-- Prefer the smallest change that satisfies the requirement.
-- Preserve existing working behavior unless the task explicitly changes it.
-- Follow existing conventions before introducing new patterns or dependencies.
-- Do not add dependencies without a clear reason.
-- Do not commit secrets, API keys, passwords, tokens, certificates, or private credentials.
-- Use environment variables or the platform's secret-management mechanism for sensitive values.
-- Add or update tests when behavior changes.
-- Run relevant tests and build checks before considering work complete.
-- Explain significant tradeoffs when introducing architectural changes.
-
-## Documentation Maintenance
-
-When work changes the project, update the repository documentation in the same change when appropriate.
-
-Update:
-
-- `docs/PRODUCT.md` when product behavior, scope, users, or requirements change.
-- `docs/ARCHITECTURE.md` when system structure, data models, APIs, major dependencies, or infrastructure change.
-- `docs/DECISIONS.md` when a meaningful product or technical decision is made.
-- `docs/ROADMAP.md` when work is completed, started, deferred, or reprioritized.
-- `docs/DEVELOPMENT.md` when setup, testing, deployment, tooling, or development conventions change.
-
-Do not leave important project knowledge solely in the AI conversation.
-
-## Decision Logging
-
-For significant decisions, add an entry to `docs/DECISIONS.md` containing:
-
-- Date
-- Decision
-- Context
-- Alternatives considered
-- Reasoning
-- Consequences / follow-up work
-
-Minor implementation details do not require decision entries.
-
-## Completion Standard
-
-Before declaring a task complete:
-
-1. Confirm the project builds or runs when applicable.
-2. Run relevant tests.
-3. Check for obvious regressions.
-4. Update affected documentation.
-5. Summarize what changed, what was tested, and any remaining risks or follow-up work.
+- Make focused, reversible changes. Preserve existing behavior and history. Follow existing conventions; when none exist, keep code and dependencies minimal and document new conventions.
+- Do not turn an example, proposal, or open question into an approved requirement. Ask the owner before choosing a production framework, hosting provider, database, authentication service, or consequential product behavior. Independent prototypes may state assumptions explicitly.
+- Add meaningful tests for behavior changes. Run applicable checks in `docs/DEVELOPMENT.md`, review the diff, and report actual results and remaining risks. A passing check never grants permission to merge or deploy.
+- Protect personal data: use synthetic fixtures, validate inputs, minimize sensitive logs, and never commit secrets or credentials. Review data collection and retention when introducing storage or integrations.
+- Update the relevant existing document when behavior, architecture, decisions, status, or developer workflow changes. Mark proposals and outstanding decisions clearly; do not invent project history.
+- Work on a focused branch and prepare a reviewable PR for material changes. Do not merge, deploy, provision production infrastructure, or publish without explicit owner approval.
+- End with a handoff: changed files, verification performed, unresolved questions or risks, and the next ready task. Put durable facts in the repository rather than relying on chat history.
