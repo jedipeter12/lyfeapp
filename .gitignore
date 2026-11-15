@@ -1,4 +1,13 @@
 # Logs
+.DS_Store
+__pycache__/
+*.py[cod]
+*.pem
+*.p12
+*.pfx
+*.key
+id_rsa
+id_ed25519
 logs
 *.log
 npm-debug.log*
