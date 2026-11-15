@@ -4,7 +4,7 @@ Lyfe is an early-stage life maintenance project for remembering, scheduling, and
 
 ## Status
 
-The repository currently contains product and engineering documentation, a documentation checker, and CI for that checker. There is no application, selected production stack, build, or runtime test suite yet. MVP and architecture details are proposals pending owner decisions.
+The repository contains an Expo Router skeleton for iOS and Android, plus product and engineering documentation. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) is the approved MVP baseline. The older repository proposals are historical where they differ from it. Authentication, data access, and feature behavior are not implemented in this skeleton.
 
 ## Start here
 
@@ -16,4 +16,4 @@ The repository currently contains product and engineering documentation, a docum
 - [Local verification and contribution workflow](docs/DEVELOPMENT.md)
 - [Standing coding-agent instructions](AGENTS.md)
 
-Run the repository's current check with `python3 scripts/check_repo.py`. Application setup commands will be added after a stack is approved and implemented.
+Run `npm ci`, then `npm start` for the Expo development server. See `docs/DEVELOPMENT.md` for native launch and checks.

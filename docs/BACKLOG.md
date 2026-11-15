@@ -1,5 +1,7 @@
 # Prioritized engineering backlog
 
+> Historical audit backlog. The active implementation queue is the [Lyfe Work/Tickets database](https://app.notion.com/p/3c135ab73db380f29231df07b4263bab?pvs=204). Follow its ticket dependencies and frozen architecture.
+
 **Status:** Proposed tasks for transfer to the existing [Lyfe Work/Tickets Notion database](https://app.notion.com/p/3c135ab73db380f29231df07b4263bab?pvs=204). The database had no rows when inspected on 2026-11-15. This file is a planning artifact, not a claim that Notion tickets exist. Priority runs top to bottom within each section.
 
 ## Ready for Agent

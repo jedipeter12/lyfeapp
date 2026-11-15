@@ -1,5 +1,7 @@
 # Proposed life maintenance domain model
 
+> Historical prototype proposal. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) governs the production data model. Recurrence occurrence persistence remains an explicit decision before implementation.
+
 **Status:** Design proposal, not an approved production schema. This is a testable specification for prototypes. Production persistence and migrations wait for owner acceptance of D1-D4.
 
 ## Concepts

@@ -1,6 +1,6 @@
 # Lyfe agent instructions
 
-Lyfe is an early-stage life maintenance app for recurring responsibilities, not a general habit tracker. `docs/PRODUCT.md` records the approved direction; its MVP proposal and `docs/ARCHITECTURE.md` are recommendations until the owner accepts them. `docs/DECISIONS.md` records accepted decisions. No application stack or production data model has been approved.
+Lyfe is a life maintenance app for recurring responsibilities, not a general habit tracker. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) in Notion is the approved MVP source of truth. The older proposals in `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, and `docs/DOMAIN_MODEL.md` are historical where they differ from it. `docs/DECISIONS.md` records this precedence and remaining decisions.
 
 ## Start each task
 
@@ -11,7 +11,7 @@ Lyfe is an early-stage life maintenance app for recurring responsibilities, not 
 ## Work and verify
 
 - Make focused, reversible changes. Preserve existing behavior and history. Follow existing conventions; when none exist, keep code and dependencies minimal and document new conventions.
-- Do not turn an example, proposal, or open question into an approved requirement. Ask the owner before choosing a production framework, hosting provider, database, authentication service, or consequential product behavior. Independent prototypes may state assumptions explicitly.
+- Do not turn an example, proposal, or open question into an approved requirement. Follow the frozen Architecture v1.0 for the approved stack and scope. Ask the owner before changing that baseline or settling consequential behavior it leaves open. Independent prototypes may state assumptions explicitly.
 - Add meaningful tests for behavior changes. Run applicable checks in `docs/DEVELOPMENT.md`, review the diff, and report actual results and remaining risks. A passing check never grants permission to merge or deploy.
 - Protect personal data: use synthetic fixtures, validate inputs, minimize sensitive logs, and never commit secrets or credentials. Review data collection and retention when introducing storage or integrations.
 - Update the relevant existing document when behavior, architecture, decisions, status, or developer workflow changes. Mark proposals and outstanding decisions clearly; do not invent project history.

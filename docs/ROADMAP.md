@@ -1,14 +1,16 @@
 # Roadmap and handoff
 
+The active queue is the [Lyfe Work/Tickets database](https://app.notion.com/p/3c135ab73db380f29231df07b4263bab?pvs=204). The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) governs the MVP.
+
 ## Current objective
 
-Resolve the first-release product and data-boundary decisions in `DECISIONS.md`, then implement a thin vertical slice. The task-level queue is `BACKLOG.md`; this file records project state only.
+Establish the approved Expo app foundation, then follow the Notion ticket dependencies for data, security, and features.
 
 ## Current state
 
-- Repository contains documentation and a dependency-free documentation checker. No application or production stack exists.
-- `PRODUCT.md`, `ARCHITECTURE.md`, and `DOMAIN_MODEL.md` contain proposals, not accepted specifications.
-- The Lyfe Work/Tickets Notion database was inspected on 2026-11-15 and had no rows. `BACKLOG.md` is a transferable proposal; no Notion tickets were created.
+- The frozen architecture approves the production stack and MVP scope.
+- Ticket L—3 adds an Expo Router navigation skeleton with strict TypeScript on a review branch. Authentication and data are not implemented.
+- The older repo product and architecture documents are historical proposals where they conflict with the frozen baseline.
 
 ## Completed
 
@@ -17,11 +19,11 @@ Resolve the first-release product and data-boundary decisions in `DECISIONS.md`,
 
 ## Next
 
-- Owner: answer D1-D4 in `DECISIONS.md`.
-- Agent: execute ready, independent tasks from `BACKLOG.md` after the infrastructure PR is reviewed.
+- Review and merge the L—3 PR when ready.
+- Then take L—4 (quality gates) and the other tickets in dependency order.
 
 ## Known issues and risks
 
-- No runnable application, automated product tests, or release path yet.
-- Recurrence semantics and backup/recovery expectations need owner acceptance before production implementation.
-- CI covers repository documentation only. Add stack-specific format, lint, type, test, and dependency checks when the stack exists.
+- Navigation screens are placeholders; no auth, persistence, or feature data path exists.
+- Recurrence occurrence persistence and destructive-operation policy remain open before those features are implemented.
+- CI still covers repository documentation only. L—4 will add application quality gates.

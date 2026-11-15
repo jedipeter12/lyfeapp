@@ -1,5 +1,7 @@
 # Architecture: current state and proposal
 
+> Historical audit proposal. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) supersedes conflicting guidance here. Its approved stack is React Native, Expo, Expo Router, strict TypeScript, Supabase, TanStack Query, and Zod. Ticket L—3 adds only the Expo navigation skeleton; the remaining layers are future tickets.
+
 ## Current state
 
 As audited on 2026-11-15, the repository has Markdown documentation, empty `src/` and `tests/` placeholders, a license, and Git configuration. There is no application code, server, database, authentication, API, analytics, deployment, or selected framework. The only executable repository tooling is the dependency-free documentation checker described in `DEVELOPMENT.md`. No approved technology choices were found in `DECISIONS.md`.
