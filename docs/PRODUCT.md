@@ -1,5 +1,7 @@
 # Product direction and MVP proposal
 
+> Historical proposal. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) defines the approved MVP: Tasks, Pets, Vehicles, and dashboard for individual accounts. Its scope supersedes conflicting exclusions below.
+
 ## Existing direction (from the original repository)
 
 Lyfe helps busy adults manage recurring life administration: vehicle, home, appointment, financial, and similar responsibilities. A user records information about an obligation and its cadence so they need not remember it unaided. The product is a life maintenance system rather than a conventional habit tracker. The original document did **not** define an approved MVP, platform, privacy policy, or feature acceptance criteria.

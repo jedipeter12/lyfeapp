@@ -2,24 +2,29 @@
 
 ## Current prerequisites and setup
 
-Git and Python 3.11 or later are sufficient for the repository tooling and recurrence prototype. No application runtime, package manager, IDE, secrets, or environment variables are required yet.
+For the Expo skeleton, install Node.js and npm, Xcode with an iOS simulator and/or Android Studio with an emulator. Git and Python 3.11 or later are also needed for the existing repository checks. No Supabase credentials are needed for the navigation placeholders.
 
 ```bash
 git clone https://github.com/jedipeter12/lyfeapp.git
 cd lyfeapp
+npm ci
+npm run typecheck
+npx expo export --platform ios --platform android
 python3 scripts/check_repo.py
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-The prototype is not a production app. There is no local run, application build, deployment, or release procedure. Add exact setup and checks here when a platform is approved.
+Use `npm run ios` or `npm run android` to launch through Expo Go on a matching simulator or device. `npm start` starts the development server without opening a target. The current routes are placeholders; no sign-in or data operations exist yet. The recurrence prototype is still not production code. There is no deployment or release procedure.
 
 ## Checks
 
 - `python3 scripts/check_repo.py`: checks required documentation and local Markdown links.
 - `python3 -m unittest discover -s tests -p 'test_*.py'`: runs prototype recurrence tests.
 - `git diff --check`: catches whitespace errors in the current diff.
+- `npm run typecheck`: checks strict TypeScript in the Expo app.
+- `npx expo export --platform ios --platform android`: bundles both native targets without publishing.
 - GitHub Actions runs the first two checks on pushes to `main` and pull requests. CI has read-only repository permission and no deploy or merge step. Run `git diff --check` locally before committing.
-- Formatting, linting, type checking, application build, dependency audit, and UI tests are **not configured** because no production stack exists. Add them with the selected stack rather than installing speculative tools.
+- Formatting, linting, automated UI tests, and full device build checks are not yet configured. The Expo bundle and type check cover this navigation skeleton; ticket L—4 owns broader quality gates.
 - No repository or agent hooks are configured. Local agent hooks are separate from CI and are not a substitute for it.
 
 ## Security and privacy

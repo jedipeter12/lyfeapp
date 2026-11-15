@@ -1,12 +1,20 @@
 # Decision log
 
+## Approved MVP baseline
+
+The owner-approved [Lyfe Architecture v1.0 (Frozen)](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) governs the MVP. It selects iOS and Android; React Native, Expo, Expo Router, and strict TypeScript; Supabase Auth, PostgreSQL, and private Storage; TanStack Query; Zod; and local notifications through an adapter. It defines the 16-table baseline, individual accounts, and online-first behavior. Changes to this baseline require an approved architecture decision record. The older proposals and open-choice table below predate that approval and do not override it.
+
+The L—3 navigation skeleton does not implement authentication or authorize production infrastructure. Recurrence occurrence persistence and destructive-operation policy remain open as the frozen architecture states.
+
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 
-## Accepted decisions
+## Historical audit record
 
 No formal accepted decision entries existed at the start of the 2026-11-15 repository audit. The existing product direction is preserved in `PRODUCT.md`; its empty MVP and architecture fields do not imply approvals.
 
-## Decisions requested from the owner
+## Historical audit questions
+
+The following questions were recorded before the frozen baseline. The baseline settled the platform, data boundary, MVP modules, and stack at a high level. Do not treat the recommendations below as current instructions.
 
 | ID | Decision | Recommendation | Why it matters |
 | --- | --- | --- | --- |
