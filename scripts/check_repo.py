@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import re
+import subprocess
 import sys
 from urllib.parse import unquote
 
@@ -28,9 +29,14 @@ def check() -> list[str]:
         if not (ROOT / name).is_file():
             errors.append(f"missing required file: {name}")
 
-    for path in ROOT.rglob("*.md"):
-        if ".git" in path.parts:
+    markdown_paths = subprocess.check_output(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "*.md"],
+        cwd=ROOT,
+    )
+    for name in markdown_paths.split(b"\0"):
+        if not name:
             continue
+        path = ROOT / name.decode("utf-8")
         relative = path.relative_to(ROOT)
         for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if line.rstrip() != line:
