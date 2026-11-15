@@ -1,5 +1,7 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
+import { PlaceholderScreen } from "@/components/PlaceholderScreen";
 
 export default function PetsScreen() {
-  return <PlaceholderScreen title="Pets" description="Your pets will appear here." />;
+  return (
+    <PlaceholderScreen title="Pets" description="Your pets will appear here." />
+  );
 }
