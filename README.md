@@ -4,7 +4,7 @@ Lyfe is an early-stage life maintenance project for remembering, scheduling, and
 
 ## Status
 
-The repository contains an Expo Router skeleton for iOS and Android, plus product and engineering documentation. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) is the approved MVP baseline. The older repository proposals are historical where they differ from it. Authentication, data access, and feature behavior are not implemented in this skeleton.
+The repository contains an Expo Router app for iOS and Android, plus product and engineering documentation. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) is the approved MVP baseline. The older repository proposals are historical where they differ from it. Ticket L—5 adds an auth and profile implementation on a review branch; the remaining feature data paths are still placeholders.
 
 ## Start here
 
@@ -16,4 +16,4 @@ The repository contains an Expo Router skeleton for iOS and Android, plus produc
 - [Local verification and contribution workflow](docs/DEVELOPMENT.md)
 - [Standing coding-agent instructions](AGENTS.md)
 
-Run `npm ci`, then `npm start` for the Expo development server. See `docs/DEVELOPMENT.md` for native launch and checks.
+Run `npm ci`, configure a development Supabase project as described in `docs/DEVELOPMENT.md`, then `npm start` for the Expo development server.

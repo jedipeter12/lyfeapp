@@ -1,5 +1,6 @@
-import { Tabs } from "expo-router";
-import { Text, type ColorValue } from "react-native";
+import { Redirect, Tabs } from "expo-router";
+import { Text, View, type ColorValue } from "react-native";
+import { useAuth } from "@/lib/supabase/AuthProvider";
 
 function tabIcon(label: string) {
   return function TabBarIcon({ color }: { color: ColorValue | null }) {
@@ -14,6 +15,15 @@ function tabIcon(label: string) {
 }
 
 export default function TabLayout() {
+  const { session, loading, configured } = useAuth();
+  if (loading)
+    return (
+      <View>
+        <Text>Loading account…</Text>
+      </View>
+    );
+  if (!configured) return <Redirect href="/" />;
+  if (!session) return <Redirect href="/sign-in" />;
   return (
     <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen
@@ -31,6 +41,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="vehicles"
         options={{ title: "Vehicles", tabBarIcon: tabIcon("V") }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{ title: "Account", tabBarIcon: tabIcon("A") }}
       />
     </Tabs>
   );

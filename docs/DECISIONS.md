@@ -6,6 +6,8 @@ The owner-approved [Lyfe Architecture v1.0 (Frozen)](https://app.notion.com/p/41
 
 The L—3 navigation skeleton does not implement authentication or authorize production infrastructure. Recurrence occurrence persistence and destructive-operation policy remain open as the frozen architecture states.
 
+Ticket L—5 implements the approved Supabase Auth choice and introduces `profiles` as the first versioned baseline migration. It uses Expo SecureStore for persisted sessions and separate development/production client configuration. This implementation does not settle the remaining schema, recurrence, or destructive-operation decisions, and it does not authorize production provisioning.
+
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 
 ## Historical audit record
