@@ -9,7 +9,8 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 ## Current state
 
 - The frozen architecture approves the production stack and MVP scope.
-- Ticket L—3 adds an Expo Router navigation skeleton with strict TypeScript on a review branch. Authentication and data are not implemented.
+- Ticket L—3's Expo Router navigation skeleton with strict TypeScript is merged. Authentication and data are not implemented.
+- Ticket L—4 adds app quality gates on a review branch: Prettier, Expo ESLint, Jest unit tests, TypeScript, and native bundle checks in CI.
 - The older repo product and architecture documents are historical proposals where they conflict with the frozen baseline.
 
 ## Completed
@@ -19,11 +20,11 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 
 ## Next
 
-- Review and merge the L—3 PR when ready.
-- Then take L—4 (quality gates) and the other tickets in dependency order.
+- Review and merge L—4 after its PR checks pass.
+- Then take the next ticket in dependency order.
 
 ## Known issues and risks
 
 - Navigation screens are placeholders; no auth, persistence, or feature data path exists.
 - Recurrence occurrence persistence and destructive-operation policy remain open before those features are implemented.
-- CI still covers repository documentation only. L—4 will add application quality gates.
+- Automated device UI tests and full native builds remain future work; L—4 checks the navigation skeleton and JavaScript bundles.

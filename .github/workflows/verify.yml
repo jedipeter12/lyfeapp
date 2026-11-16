@@ -17,8 +17,24 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Check documentation
         run: python3 scripts/check_repo.py
       - name: Test recurrence prototype
         run: python3 -m unittest discover -s tests -p 'test_*.py'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install app dependencies
+        run: npm ci
+      - name: Check formatting
+        run: npm run format:check
+      - name: Lint app
+        run: npm run lint
+      - name: Typecheck app
+        run: npm run typecheck
+      - name: Test app
+        run: npm test
+      - name: Bundle iOS and Android
+        run: npx expo export --platform ios --platform android
