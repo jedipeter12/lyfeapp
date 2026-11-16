@@ -12,6 +12,7 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 - Ticket L—3's Expo Router navigation skeleton with strict TypeScript is merged. Authentication and data are not implemented.
 - Ticket L—4's app quality gates are merged: Prettier, Expo ESLint, Jest unit tests, TypeScript, and native bundle checks in CI.
 - Ticket L—5 adds Supabase client configuration, email/password authentication, secure session storage, route guards, and a profile migration on a review branch. No Supabase project has been provisioned or migrated by this repository change.
+- In an isolated local Supabase stack, the L—5 migration applied, synthetic owner/anonymous RLS and cascade checks passed, and signup, profile provisioning/editing, sign-out, and password sign-in succeeded through the local API. The temporary stack was stopped afterward.
 - The older repo product and architecture documents are historical proposals where they conflict with the frozen baseline.
 
 ## Completed
@@ -26,6 +27,6 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 
 ## Known issues and risks
 
-- Task, pet, and vehicle screens remain placeholders. Auth/profile behavior needs a live development project and device verification.
+- Task, pet, and vehicle screens remain placeholders. Auth/profile behavior still needs a hosted development project and device verification, including email confirmation and secure session restoration.
 - Recurrence occurrence persistence and destructive-operation policy remain open before those features are implemented.
 - Automated device UI tests and full native builds remain future work; L—4 checks the navigation skeleton and JavaScript bundles.
