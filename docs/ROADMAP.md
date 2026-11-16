@@ -22,8 +22,9 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 
 ## Next
 
-- Review L—5 and verify auth/profile behavior with separate development and production Supabase projects before merge or deployment.
-- Then take L—6, the remaining 15 baseline tables, in dependency order.
+- Review L—5 for merge. Local migration, RLS, and Auth API checks passed; a hosted project is not required to review this code. Merging requires explicit owner approval.
+- After L—5 merges, take L—6, the remaining 15 baseline tables. L—9's design system work depends only on the merged Expo foundation and can proceed independently.
+- Before treating hosted auth as validated, configure a development Supabase project and check email confirmation and secure session restoration on a device. Use a separate production project before a production release.
 
 ## Known issues and risks
 
