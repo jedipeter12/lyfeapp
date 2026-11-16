@@ -2,7 +2,11 @@
 
 ## Current prerequisites and setup
 
-For the Expo skeleton, install Node.js 22 or later and npm, Xcode with an iOS simulator and/or Android Studio with an emulator. Git and Python 3.11 or later are also needed for the existing repository checks. No Supabase credentials are needed for the navigation placeholders.
+Install Node.js 22 or later and npm, Xcode with an iOS simulator and/or Android Studio with an emulator. Git and Python 3.11 or later are also needed for the existing repository checks. The app can run without Supabase configuration but shows a setup message instead of account access.
+
+For L—5 development, create a separate **development** Supabase project with email/password authentication enabled. Copy `.env.example` to `.env.development.local` and set its project URL and publishable key. These are public client values; never put a service-role or secret key in an `EXPO_PUBLIC_` variable. Apply `supabase/migrations/20261115210000_profiles_auth.sql` to the development project using the Supabase migration workflow. Configure an email confirmation link that can be opened on the test device if email confirmation is enabled. The migration creates `profiles` with owner-scoped RLS, a signup trigger, and a backfill for existing users. Do not edit this migration after it is applied.
+
+Use a distinct Supabase project and `.env.production.local` for production builds, with `EXPO_PUBLIC_APP_ENV=production`. Expo SDK 58 loads `.env.development.local` for `expo start` and `.env.production.local` for `expo export`; `.env.local` takes precedence in both modes, so do not use it for these projects. Check the loaded project URL before a release build. Production migration and release require owner approval. No project credentials or production infrastructure are included in the repository. [Expo's environment loading rules](https://docs.expo.dev/guides/environment-variables/) and [Supabase's user management guidance](https://supabase.com/docs/guides/auth/managing-user-data) explain the underlying setup.
 
 ```bash
 git clone https://github.com/jedipeter12/lyfeapp.git
@@ -17,7 +21,7 @@ python3 scripts/check_repo.py
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-Use `npm run ios` or `npm run android` to launch through Expo Go on a matching simulator or device. `npm start` starts the development server without opening a target. The current routes are placeholders; no sign-in or data operations exist yet. The recurrence prototype is still not production code. There is no deployment or release procedure.
+Use `npm run ios` or `npm run android` to launch through Expo Go on a matching simulator or device. `npm start` starts the development server without opening a target. With the development project configured and the migration applied, create an account, confirm its email if required, sign in, edit the Account profile, restart the app to check session restoration, and sign out. Task, pet, and vehicle routes are placeholders. The recurrence prototype is still not production code. There is no deployment or release procedure.
 
 ## Checks
 
@@ -27,10 +31,10 @@ Use `npm run ios` or `npm run android` to launch through Expo Go on a matching s
 - `npm run format:check`: checks app source and configuration with Prettier; `npm run format` applies it.
 - `npm run lint`: runs the Expo ESLint flat configuration with warnings treated as failures.
 - `npm run typecheck`: checks strict TypeScript in the Expo app.
-- `npm test`: runs Expo Jest unit tests, including the placeholder screen's accessible header and content contract.
+- `npm test`: runs Expo Jest unit tests, including placeholder content, auth form submission, and secure session storage behavior.
 - `npx expo export --platform ios --platform android`: bundles both native targets without publishing.
 - GitHub Actions runs the documentation and Python checks, installs locked app dependencies with `npm ci`, then runs formatting, lint, typecheck, unit tests, and both native bundle checks on pushes to `main` and pull requests. CI has read-only repository permission and no deploy or merge step. Run `git diff --check` locally before committing.
-- Automated device UI tests and full native build checks are not yet configured. The current unit test and bundle checks cover the navigation skeleton, not end-to-end behavior.
+- Automated device UI tests, live Supabase integration tests, and full native build checks are not yet configured. The current unit test and bundle checks do not verify a live email confirmation or profile migration.
 - No repository or agent hooks are configured. Local agent hooks are separate from CI and are not a substitute for it.
 
 ## Security and privacy
