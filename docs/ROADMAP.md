@@ -9,10 +9,11 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 ## Current state
 
 - The frozen architecture approves the production stack and MVP scope.
-- Ticket L—3's Expo Router navigation skeleton with strict TypeScript is merged. Authentication and data are not implemented.
+- Ticket L—3's Expo Router navigation skeleton with strict TypeScript is merged.
 - Ticket L—4's app quality gates are merged: Prettier, Expo ESLint, Jest unit tests, TypeScript, and native bundle checks in CI.
-- Ticket L—5 adds Supabase client configuration, email/password authentication, secure session storage, route guards, and a profile migration on a review branch. No Supabase project has been provisioned or migrated by this repository change.
+- Ticket L—5's Supabase client configuration, email/password authentication, secure session storage, route guards, and profile migration are merged. The existing Free-plan Supabase project **Lyfe App** (`cwyzeokzjbvfalvmqnhx`) is designated for development. Migration `20261115210000_profiles_auth` was applied there on 2026-11-16; a follow-up CLI dry run found no pending migrations.
 - In an isolated local Supabase stack, the L—5 migration applied, synthetic owner/anonymous RLS and cascade checks passed, and signup, profile provisioning/editing, sign-out, and password sign-in succeeded through the local API. The temporary stack was stopped afterward.
+- On the hosted development project, `public.profiles` has RLS, owner-scoped SELECT/UPDATE policies, and the expected profile triggers. Anonymous REST access to the table was denied. Email signup is enabled and confirmation is required. Device signup, email confirmation, and session restoration have not yet been verified.
 - The older repo product and architecture documents are historical proposals where they conflict with the frozen baseline.
 
 ## Completed
@@ -22,12 +23,12 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 
 ## Next
 
-- Review L—5 for merge. Local migration, RLS, and Auth API checks passed; a hosted project is not required to review this code. Merging requires explicit owner approval.
-- After L—5 merges, take L—6, the remaining 15 baseline tables. L—9's design system work depends only on the merged Expo foundation and can proceed independently.
-- Before treating hosted auth as validated, configure a development Supabase project and check email confirmation and secure session restoration on a device. Use a separate production project before a production release.
+- Take L—6, the remaining 15 baseline tables. L—9's design system work can proceed independently.
+- Verify hosted signup with an organization member's email address, confirm it, edit the profile, restart the app to check session restoration, and sign out. Use a separate production project before a production release.
 
 ## Known issues and risks
 
-- Task, pet, and vehicle screens remain placeholders. Auth/profile behavior still needs a hosted development project and device verification, including email confirmation and secure session restoration.
+- Task, pet, and vehicle screens remain placeholders. Hosted auth/profile behavior still needs device verification, including email confirmation and secure session restoration.
+- The development project's Security Advisor reports two warnings for its pre-existing `public.rls_auto_enable()` SECURITY DEFINER event-trigger function being executable by `anon` and `authenticated`. These warnings were present before the L—5 migration; review them before production use.
 - Recurrence occurrence persistence and destructive-operation policy remain open before those features are implemented.
 - Automated device UI tests and full native builds remain future work; L—4 checks the navigation skeleton and JavaScript bundles.
