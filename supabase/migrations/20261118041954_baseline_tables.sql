@@ -92,7 +92,7 @@ create table public.pet_weight_entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(user_id) on delete cascade,
   pet_id uuid not null,
-  weight_kg numeric not null check (weight_kg > 0),
+  weight_kg numeric not null check (weight_kg > 0 and weight_kg < 'Infinity'::numeric),
   measured_at timestamptz not null,
   constraint pet_weight_owner foreign key (user_id, pet_id)
     references public.pets(user_id, id) deferrable initially deferred
@@ -140,7 +140,7 @@ create table public.vehicle_service_records (
   service_type text not null check (length(btrim(service_type)) > 0),
   performed_on date not null,
   odometer integer check (odometer >= 0),
-  cost numeric check (cost >= 0),
+  cost numeric check (cost >= 0 and cost < 'Infinity'::numeric),
   currency_code text check (currency_code ~ '^[A-Z]{3}$'),
   constraint vehicle_service_owner foreign key (user_id, vehicle_id)
     references public.vehicles(user_id, id) deferrable initially deferred

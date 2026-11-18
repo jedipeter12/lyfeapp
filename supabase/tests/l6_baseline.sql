@@ -75,6 +75,33 @@ begin
   exception when check_violation then rejected := true;
   end;
   if not rejected then raise exception 'zero weight succeeded'; end if;
+
+  rejected := false;
+  begin
+    insert into public.pet_weight_entries (user_id, pet_id, weight_kg, measured_at)
+      values ('11111111-1111-4111-8111-111111111111',
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'NaN'::numeric, now());
+  exception when check_violation then rejected := true;
+  end;
+  if not rejected then raise exception 'NaN weight succeeded'; end if;
+
+  rejected := false;
+  begin
+    insert into public.pet_weight_entries (user_id, pet_id, weight_kg, measured_at)
+      values ('11111111-1111-4111-8111-111111111111',
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Infinity'::numeric, now());
+  exception when check_violation then rejected := true;
+  end;
+  if not rejected then raise exception 'infinite weight succeeded'; end if;
+
+  rejected := false;
+  begin
+    insert into public.vehicle_service_records (user_id, vehicle_id, service_type, performed_on, cost)
+      values ('11111111-1111-4111-8111-111111111111',
+        'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Synthetic service', current_date, 'NaN'::numeric);
+  exception when check_violation then rejected := true;
+  end;
+  if not rejected then raise exception 'NaN cost succeeded'; end if;
 end;
 $$;
 
