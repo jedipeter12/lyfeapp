@@ -84,16 +84,34 @@ export function createRepositories(
       if (!Number.isSafeInteger(page) || page < 0)
         throw new Error("Invalid page");
       const start = page * 100;
-      const { data, error } = await client
-        .from(table)
-        .select("*")
-        .eq("user_id", userId)
-        .order("id")
-        .range(start, start + 99);
+      let query = client.from(table).select("*").eq("user_id", userId);
+      if (table === "tasks") query = query.is("deleted_at", null);
+      const { data, error } = await query.order("id").range(start, start + 99);
       if (error) throw error;
       return (data ?? []).map((value) =>
         parseOwned(entitySchemas[table].row, value, userId),
       ) as EntityRow<T>[];
+    },
+
+    async listDeletedTasks(
+      userId: string,
+      page = 0,
+    ): Promise<EntityRow<"tasks">[]> {
+      z.uuid().parse(userId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      const start = page * 100;
+      const { data, error } = await client
+        .from("tasks")
+        .select("*")
+        .eq("user_id", userId)
+        .not("deleted_at", "is", null)
+        .order("id")
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) =>
+        parseOwned(entitySchemas.tasks.row, value, userId),
+      ) as EntityRow<"tasks">[];
     },
 
     async get<T extends EntityTable>(
@@ -151,6 +169,47 @@ export function createRepositories(
         .single();
       if (error) throw error;
       return parseOwned(entitySchemas[table].row, data, userId) as EntityRow<T>;
+    },
+
+    async markTaskDeleted(
+      userId: string,
+      id: string,
+    ): Promise<EntityRow<"tasks">> {
+      z.uuid().parse(userId);
+      z.uuid().parse(id);
+      await assertOnline();
+      const { data, error } = await client
+        .from("tasks")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("id", id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      return parseOwned(
+        entitySchemas.tasks.row,
+        data,
+        userId,
+      ) as EntityRow<"tasks">;
+    },
+
+    async restoreTask(userId: string, id: string): Promise<EntityRow<"tasks">> {
+      z.uuid().parse(userId);
+      z.uuid().parse(id);
+      await assertOnline();
+      const { data, error } = await client
+        .from("tasks")
+        .update({ deleted_at: null })
+        .eq("user_id", userId)
+        .eq("id", id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      return parseOwned(
+        entitySchemas.tasks.row,
+        data,
+        userId,
+      ) as EntityRow<"tasks">;
     },
   };
 }
