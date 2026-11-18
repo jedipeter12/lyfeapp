@@ -1,15 +1,10 @@
 import { useState } from "react";
 import { Link, type Href } from "expo-router";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  useColorScheme,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View } from "react-native";
+import { AppButton } from "./ui/AppButton";
+import { AppScreen } from "./ui/AppScreen";
+import { AppTextField } from "./ui/AppTextField";
+import { spacing, useAppTheme } from "@/theme";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/supabase/AuthProvider";
 
@@ -20,12 +15,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   const [message, setMessage] = useState("");
   const { configured } = useAuth();
   const signingUp = mode === "sign-up";
-  const dark = useColorScheme() === "dark";
-  const foreground = dark ? "#F9FAFB" : "#18212F";
-  const inputStyle = [
-    styles.input,
-    { color: foreground, borderColor: dark ? "#9CA3AF" : "#737373" },
-  ];
+  const { colors } = useAppTheme();
 
   async function submit() {
     if (!supabase || busy) return;
@@ -53,100 +43,64 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   }
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { backgroundColor: dark ? "#101827" : "#FFFFFF" },
-      ]}
-    >
+    <AppScreen centered scroll>
       <View style={styles.form}>
         <Text
           accessibilityRole="header"
-          style={[styles.title, { color: foreground }]}
+          style={[styles.title, { color: colors.text }]}
         >
           {signingUp ? "Create account" : "Sign in"}
         </Text>
         {!configured ? (
-          <Text accessibilityRole="alert" style={{ color: foreground }}>
+          <Text accessibilityRole="alert" style={{ color: colors.error }}>
             Supabase is not configured. See docs/DEVELOPMENT.md.
           </Text>
         ) : null}
-        <Text style={[styles.label, { color: foreground }]}>Email</Text>
-        <TextInput
-          accessibilityLabel="Email"
+        <AppTextField
+          label="Email"
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
           textContentType="emailAddress"
           value={email}
           onChangeText={setEmail}
-          style={inputStyle}
         />
-        <Text style={[styles.label, { color: foreground }]}>Password</Text>
-        <TextInput
-          accessibilityLabel="Password"
+        <AppTextField
+          label="Password"
           autoCapitalize="none"
           autoComplete={signingUp ? "new-password" : "current-password"}
           secureTextEntry
           textContentType={signingUp ? "newPassword" : "password"}
           value={password}
           onChangeText={setPassword}
-          style={inputStyle}
         />
         {message ? (
           <Text
             accessibilityRole="alert"
-            style={[styles.message, { color: foreground }]}
+            style={[styles.message, { color: colors.text }]}
           >
             {message}
           </Text>
         ) : null}
-        <Pressable
-          accessibilityRole="button"
-          disabled={!configured || busy}
-          onPress={submit}
-          style={styles.button}
-        >
-          {busy ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>
-              {signingUp ? "Create account" : "Sign in"}
-            </Text>
-          )}
-        </Pressable>
+        <AppButton disabled={!configured} busy={busy} onPress={submit}>
+          {signingUp ? "Create account" : "Sign in"}
+        </AppButton>
         <Link
           href={(signingUp ? "/sign-in" : "/sign-up") as Href}
-          style={[styles.link, { color: dark ? "#93C5FD" : "#1D4ED8" }]}
+          style={[styles.link, { color: colors.primary }]}
         >
           {signingUp
             ? "Have an account? Sign in"
             : "Need an account? Create one"}
         </Link>
       </View>
-    </SafeAreaView>
+    </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24 },
-  form: { gap: 10, width: "100%", maxWidth: 420, alignSelf: "center" },
-  title: { fontSize: 28, fontWeight: "700", marginBottom: 18 },
-  label: { fontSize: 16, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  message: { fontSize: 15, marginVertical: 8 },
-  button: {
-    backgroundColor: "#1D4ED8",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  link: { fontSize: 16, marginTop: 16, textAlign: "center" },
+  form: { gap: spacing.lg, width: "100%", maxWidth: 420, alignSelf: "center" },
+  title: { fontSize: 30, fontWeight: "700", marginBottom: spacing.lg },
+  message: { fontSize: 15 },
+  link: { fontSize: 16, paddingVertical: spacing.md, textAlign: "center" },
 });

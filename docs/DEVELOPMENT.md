@@ -51,6 +51,12 @@ Use `npm run ios` or `npm run android` to launch through Expo Go on a matching s
 
 The task list repository excludes rows with `deleted_at` set. `listDeletedTasks` explicitly fetches marked tasks for restoration. `markTaskDeleted` and `restoreTask` update only that marker and invalidate the task query cache through their hooks. The migration is applied to the development project; task screens and notification cleanup are not yet implemented.
 
+## L—9 app UI conventions
+
+`src/theme/index.ts` defines the light and dark palettes, spacing, corner radii, and matching navigation colors. The app follows the operating system color scheme. Use `useAppTheme()` for screen-specific colors; avoid adding color literals to screens. `src/components/ui` provides `AppScreen`, `AppButton`, `AppTextField`, and `FeedbackState` for safe-area layout, minimum 48-point controls, labeled inputs, and loading/empty/error messages. Keep visible text labels on navigation and controls. The existing auth, account, and placeholder routes use these components as examples.
+
+The theme tests check WCAG AA contrast for regular text and 3:1 contrast for visible input borders. Component tests check button disabled behavior, input labels, and error announcements. These automated checks do not replace a VoiceOver/TalkBack pass on a device, large-text layout review, or visual checks of both color schemes before release.
+
 ## Security and privacy
 
 Never commit credentials or real personal information. `.gitignore` excludes common local secret files, but ignore rules are not a secret scanner. Inspect staged changes before committing. Enable GitHub secret scanning and dependency alerts in repository settings if available; those settings are outside the tracked repository and have not been verified here. `npm ci` currently reports moderate dependency advisories; assess those separately before adding an audit gate or upgrading Expo dependencies.

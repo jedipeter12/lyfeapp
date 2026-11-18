@@ -1,19 +1,14 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  useColorScheme,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/supabase/AuthProvider";
 import { useProfile, useUpdateProfile } from "@/lib/query/entities";
 import { OfflineWriteError } from "@/lib/supabase/repositories";
+import { AppButton } from "@/components/ui/AppButton";
+import { AppScreen } from "@/components/ui/AppScreen";
+import { AppTextField } from "@/components/ui/AppTextField";
+import { FeedbackState } from "@/components/ui/FeedbackState";
+import { spacing, useAppTheme } from "@/theme";
 
 export default function AccountScreen() {
   const { session } = useAuth();
@@ -28,12 +23,7 @@ export default function AccountScreen() {
   const updateProfile = useUpdateProfile(userId);
   const displayName = draft?.display_name ?? profile.data?.display_name ?? "";
   const timezone = draft?.timezone ?? profile.data?.timezone ?? "UTC";
-  const dark = useColorScheme() === "dark";
-  const foreground = dark ? "#F9FAFB" : "#18212F";
-  const inputStyle = [
-    styles.input,
-    { color: foreground, borderColor: dark ? "#9CA3AF" : "#737373" },
-  ];
+  const { colors } = useAppTheme();
 
   async function save() {
     if (
@@ -84,95 +74,66 @@ export default function AccountScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { backgroundColor: dark ? "#101827" : "#FFFFFF" },
-      ]}
-    >
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text
-          accessibilityRole="header"
-          style={[styles.title, { color: foreground }]}
-        >
-          Account
-        </Text>
-        <Text style={{ color: foreground }}>{session?.user.email ?? ""}</Text>
-        <Text style={[styles.label, { color: foreground }]}>Display name</Text>
-        <TextInput
-          accessibilityLabel="Display name"
-          maxLength={120}
-          value={displayName}
-          onChangeText={(value) => {
-            setDraft({ display_name: value, timezone });
-          }}
-          style={inputStyle}
+    <AppScreen scroll>
+      <Text
+        accessibilityRole="header"
+        style={[styles.title, { color: colors.text }]}
+      >
+        Account
+      </Text>
+      <Text style={{ color: colors.muted }}>{session?.user.email ?? ""}</Text>
+      {profile.isPending ? (
+        <FeedbackState kind="loading" title="Loading profile…" />
+      ) : profile.isError ? (
+        <FeedbackState
+          kind="error"
+          title="Could not load profile"
+          actionLabel="Try again"
+          onAction={() => void profile.refetch()}
         />
-        <Text style={[styles.label, { color: foreground }]}>Time zone</Text>
-        <TextInput
-          accessibilityLabel="Time zone"
-          autoCapitalize="none"
-          maxLength={100}
-          value={timezone}
-          onChangeText={(value) => {
-            setDraft({ display_name: displayName, timezone: value });
-          }}
-          style={inputStyle}
-        />
-        {profile.isError ? (
-          <Text accessibilityRole="alert" style={{ color: foreground }}>
-            Could not load profile.
-          </Text>
-        ) : null}
-        {message ? (
-          <Text accessibilityRole="alert" style={{ color: foreground }}>
-            {message}
-          </Text>
-        ) : null}
-        <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
+      ) : (
+        <>
+          <AppTextField
+            label="Display name"
+            maxLength={120}
+            value={displayName}
+            onChangeText={(value) => {
+              setDraft({ display_name: value, timezone });
+            }}
+          />
+          <AppTextField
+            label="Time zone"
+            autoCapitalize="none"
+            maxLength={100}
+            value={timezone}
+            onChangeText={(value) => {
+              setDraft({ display_name: displayName, timezone: value });
+            }}
+          />
+          <AppButton
             disabled={busy || !profile.data}
+            busy={busy}
             onPress={save}
-            style={styles.button}
           >
-            {busy ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Save profile</Text>
-            )}
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            disabled={busy}
-            onPress={signOut}
-            style={styles.button}
-          >
-            <Text style={styles.buttonText}>Sign out</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            Save profile
+          </AppButton>
+        </>
+      )}
+      {message ? (
+        <Text accessibilityRole="alert" style={{ color: colors.text }}>
+          {message}
+        </Text>
+      ) : null}
+      <View style={styles.actions}>
+        <AppButton disabled={busy} onPress={signOut} variant="secondary">
+          Sign out
+        </AppButton>
+      </View>
+    </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { gap: 12, padding: 24 },
-  title: { fontSize: 28, fontWeight: "700" },
-  label: { fontSize: 16, fontWeight: "600", marginTop: 12 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  actions: { gap: 12, marginTop: 16 },
-  button: {
-    backgroundColor: "#1D4ED8",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  title: { fontSize: 30, fontWeight: "700" },
+  actions: { gap: spacing.md, marginTop: spacing.lg },
 });
