@@ -1,6 +1,6 @@
 # MVP data model
 
-The frozen [Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) defines 16 application tables. Migration `20261115210000_profiles_auth` creates `profiles`; migration `20261118041954_baseline_tables` adds the remaining 15. L-6 is a review proposal until merged and applied. The latter migration has not been applied to the hosted development project or a production project.
+The frozen [Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) defines 16 application tables. Migration `20261115210000_profiles_auth` creates `profiles`; merged L—6 migration `20261118041954_baseline_tables` adds the remaining 15. The L—6 migration has not been applied to the hosted development project or a production project.
 
 Every table contains an owner `user_id`. App roles can select, insert, and update only their own rows, with column limited updates that cannot change identity and ownership. No app role has `DELETE`. Child tables use `(user_id, parent_id)` foreign keys so a row cannot link to another account's task, pet, vehicle, or custom field definition. Tasks allow one pet or vehicle link at most. All 16 tables have RLS. The only polymorphic references are attachments and custom field values; caller rights triggers check entity existence and ownership on insert and reference changes.
 
