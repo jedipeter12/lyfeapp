@@ -16,6 +16,10 @@ Ticket L—5 implements the approved Supabase Auth choice and introduces `profil
 
 **Consequences:** Users cannot remove mistaken or obsolete records in the MVP; they can edit records, and tasks can be completed. Archive or individual deletion requires a future product decision and migration. Account deletion remains a separate required workflow: remove owned Storage objects through the Storage API, then delete the Auth user so application rows cascade through `profiles`. L—6 does not implement that workflow. This decision does not authorize a hosted migration, merge, or release.
 
+## Proposed amendment: task-only soft deletion
+
+[ADR-001](decisions/ADR-001-task-soft-delete.md) proposes a reversible `tasks.deleted_at` marker so tasks can be hidden from default MVP views. It is not approved or deployed. The accepted L—6 restriction continues to govern until the owner approves the amendment and the query and notification behavior is implemented.
+
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 
 ## Historical audit record
