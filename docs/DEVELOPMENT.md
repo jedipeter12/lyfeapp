@@ -41,6 +41,12 @@ Use `npm run ios` or `npm run android` to launch through Expo Go on a matching s
 - Automated device UI tests, live Supabase integration tests, and full native build checks are not yet configured. The current unit test and bundle checks do not verify a live email confirmation or profile migration.
 - No repository or agent hooks are configured. Local agent hooks are separate from CI and are not a substitute for it.
 
+## L—8 data access foundation
+
+`src/lib/supabase/repositories.ts` owns Supabase queries for profiles and the three top-level module tables (`tasks`, `pets`, and `vehicles`). Its Zod schemas in `src/schemas/entities.ts` validate write inputs and complete rows returned by the Data API. The repository always filters reads and updates by `user_id`, validates the returned owner, and checks NetInfo immediately before a write. A disconnected write throws `OfflineWriteError`; there is no offline mutation queue. PostgreSQL RLS remains the security boundary.
+
+`src/lib/query/entities.ts` exposes user-scoped TanStack Query hooks. List queries page by 100 rows using stable `id` order. Mutations invalidate the changed user's list and detail queries; profile saves replace the cached profile with the returned row. The cache is memory-only, with a 30-second stale time and five-minute garbage collection. `QueryProvider` connects native network and app focus state and clears cached data when the signed-in user changes or signs out. Use these hooks from screens; add child-record repositories and schemas as their feature tickets define behavior. The L—6 schema is already applied to the Lyfe development project; authenticated device flows still need testing.
+
 ## Security and privacy
 
 Never commit credentials or real personal information. `.gitignore` excludes common local secret files, but ignore rules are not a secret scanner. Inspect staged changes before committing. Enable GitHub secret scanning and dependency alerts in repository settings if available; those settings are outside the tracked repository and have not been verified here. `npm ci` currently reports moderate dependency advisories; assess those separately before adding an audit gate or upgrading Expo dependencies.

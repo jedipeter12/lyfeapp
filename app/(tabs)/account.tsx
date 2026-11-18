@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -12,13 +12,22 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/supabase/AuthProvider";
+import { useProfile, useUpdateProfile } from "@/lib/query/entities";
+import { OfflineWriteError } from "@/lib/supabase/repositories";
 
 export default function AccountScreen() {
   const { session } = useAuth();
-  const [displayName, setDisplayName] = useState("");
-  const [timezone, setTimezone] = useState("UTC");
+  const [draft, setDraft] = useState<{
+    display_name: string;
+    timezone: string;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const userId = session?.user.id ?? "";
+  const profile = useProfile(userId);
+  const updateProfile = useUpdateProfile(userId);
+  const displayName = draft?.display_name ?? profile.data?.display_name ?? "";
+  const timezone = draft?.timezone ?? profile.data?.timezone ?? "UTC";
   const dark = useColorScheme() === "dark";
   const foreground = dark ? "#F9FAFB" : "#18212F";
   const inputStyle = [
@@ -26,29 +35,15 @@ export default function AccountScreen() {
     { color: foreground, borderColor: dark ? "#9CA3AF" : "#737373" },
   ];
 
-  useEffect(() => {
-    if (!supabase || !session) return;
-    let active = true;
-    supabase
-      .from("profiles")
-      .select("display_name,timezone")
-      .eq("user_id", session.user.id)
-      .single()
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error) setMessage("Could not load profile.");
-        else {
-          setDisplayName(data.display_name ?? "");
-          setTimezone(data.timezone);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [session]);
-
   async function save() {
-    if (!supabase || !session || busy) return;
+    if (
+      !supabase ||
+      !session ||
+      !profile.data ||
+      busy ||
+      updateProfile.isPending
+    )
+      return;
     try {
       new Intl.DateTimeFormat("en-US", { timeZone: timezone.trim() });
     } catch {
@@ -58,13 +53,18 @@ export default function AccountScreen() {
     setBusy(true);
     setMessage("");
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ display_name: displayName.trim(), timezone: timezone.trim() })
-        .eq("user_id", session.user.id);
-      setMessage(error ? "Could not save profile." : "Profile saved.");
-    } catch {
-      setMessage("Could not reach the account service. Try again.");
+      await updateProfile.mutateAsync({
+        display_name: displayName.trim(),
+        timezone: timezone.trim(),
+      });
+      setDraft(null);
+      setMessage("Profile saved.");
+    } catch (error) {
+      setMessage(
+        error instanceof OfflineWriteError
+          ? error.message
+          : "Could not save profile. Try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -103,7 +103,9 @@ export default function AccountScreen() {
           accessibilityLabel="Display name"
           maxLength={120}
           value={displayName}
-          onChangeText={setDisplayName}
+          onChangeText={(value) => {
+            setDraft({ display_name: value, timezone });
+          }}
           style={inputStyle}
         />
         <Text style={[styles.label, { color: foreground }]}>Time zone</Text>
@@ -112,9 +114,16 @@ export default function AccountScreen() {
           autoCapitalize="none"
           maxLength={100}
           value={timezone}
-          onChangeText={setTimezone}
+          onChangeText={(value) => {
+            setDraft({ display_name: displayName, timezone: value });
+          }}
           style={inputStyle}
         />
+        {profile.isError ? (
+          <Text accessibilityRole="alert" style={{ color: foreground }}>
+            Could not load profile.
+          </Text>
+        ) : null}
         {message ? (
           <Text accessibilityRole="alert" style={{ color: foreground }}>
             {message}
@@ -123,7 +132,7 @@ export default function AccountScreen() {
         <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
-            disabled={busy}
+            disabled={busy || !profile.data}
             onPress={save}
             style={styles.button}
           >
