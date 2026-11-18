@@ -8,6 +8,12 @@ The L—3 navigation skeleton does not implement authentication or authorize pro
 
 Ticket L—5 implements the approved Supabase Auth choice and introduces `profiles` as the first versioned baseline migration. It uses Expo SecureStore for persisted sessions and separate development/production client configuration. This implementation does not settle the remaining schema, recurrence, or destructive-operation decisions, and it does not authorize production provisioning.
 
+## Proposal for L—6: deletion boundary (owner decision pending)
+
+**Status:** Proposed, 2026-11-17. The frozen architecture requires a policy before destructive operations, and L—6 requires documented delete behavior. The L—6 draft migration permits no app role to delete rows. It uses deferred `NO ACTION` for parent references, so a future entity delete must explicitly handle linked tasks, history, custom fields, and attachments. Deleting an Auth user cascades all application rows through `profiles`; Storage file cleanup must be part of the future account deletion workflow. No app deletion flow or hosted schema change is authorized by this proposal.
+
+The owner must choose whether the MVP archives entities, restricts deletion while dependants exist, or permits an explicit cascade. The draft uses restriction as its safe default until that choice is accepted. After acceptance, record the chosen behavior and revise the migration before merging if needed.
+
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 
 ## Historical audit record
