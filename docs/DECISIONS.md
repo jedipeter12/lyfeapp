@@ -8,11 +8,13 @@ The L—3 navigation skeleton does not implement authentication or authorize pro
 
 Ticket L—5 implements the approved Supabase Auth choice and introduces `profiles` as the first versioned baseline migration. It uses Expo SecureStore for persisted sessions and separate development/production client configuration. This implementation does not settle the remaining schema, recurrence, or destructive-operation decisions, and it does not authorize production provisioning.
 
-## Proposal for L—6: deletion boundary (owner decision pending)
+## Accepted L—6 decision: restricted individual deletion
 
-**Status:** Proposed, 2026-11-17. The frozen architecture requires a policy before destructive operations, and L—6 requires documented delete behavior. The L—6 draft migration permits no app role to delete rows. It uses deferred `NO ACTION` for parent references, so a future entity delete must explicitly handle linked tasks, history, custom fields, and attachments. Deleting an Auth user cascades all application rows through `profiles`; Storage file cleanup must be part of the future account deletion workflow. No app deletion flow or hosted schema change is authorized by this proposal.
+**Status:** Accepted by the owner, 2026-11-17. For the MVP, users may edit individual records and complete tasks, but the app does not offer deletion of individual tasks, pets, vehicles, or their child records. The authenticated role has no `DELETE` grant. Parent references use deferred `NO ACTION`, so a later deletion flow must explicitly handle linked tasks, history, custom fields, and attachments. There is no in-app archive behavior in this decision.
 
-The owner must choose whether the MVP archives entities, restricts deletion while dependants exist, or permits an explicit cascade. The draft uses restriction as its safe default until that choice is accepted. After acceptance, record the chosen behavior and revise the migration before merging if needed.
+**Alternatives considered:** Archive and restore would need new state and behavior for linked records and reminders. Explicit cascading deletion would risk removing history and files unexpectedly. Restriction keeps the frozen 16-table baseline intact while those behaviors are designed separately.
+
+**Consequences:** Users cannot remove mistaken or obsolete records in the MVP; they can edit records, and tasks can be completed. Archive or individual deletion requires a future product decision and migration. Account deletion remains a separate required workflow: remove owned Storage objects through the Storage API, then delete the Auth user so application rows cascade through `profiles`. L—6 does not implement that workflow. This decision does not authorize a hosted migration, merge, or release.
 
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 

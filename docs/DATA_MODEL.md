@@ -6,9 +6,9 @@ Every table contains an owner `user_id`. App roles can select, insert, and updat
 
 The migration enforces positive pet weights, nonnegative mileage, odometer, cost, and attachment size, supported recurrence frequencies and weekdays, valid module and custom field types, and shape and type checks for custom field values. VINs are uppercased and whitespace removed before enforcing per user uniqueness. Text task status, priority, and reminder status remain nonempty but open vocabularies until feature behavior is specified. Recurrence occurrence persistence is still undecided; this migration does not add an occurrence table or completion history.
 
-## Delete behavior proposed for owner decision
+## Approved MVP delete behavior
 
-The database grants no row deletion to the app role. Parent foreign keys use deferred `NO ACTION`, requiring a future delete flow to handle children explicitly. Removing an Auth user cascades through `profiles` to all owned application rows. Storage objects are outside this migration; a later account deletion flow must remove those files as well. This is a proposed boundary, not an approved in-app archive or deletion policy. See [DECISIONS.md](DECISIONS.md).
+The [owner-approved decision](DECISIONS.md) restricts individual record deletion in the MVP. The database grants no row deletion to the app role. Parent foreign keys use deferred `NO ACTION`, requiring a future delete flow to handle children explicitly. There is no in-app archive behavior. Removing an Auth user cascades through `profiles` to all owned application rows. Storage objects are outside this migration; a later account deletion flow must remove those files through the Storage API before deleting the Auth user.
 
 ## Local verification
 
