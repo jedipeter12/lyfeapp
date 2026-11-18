@@ -28,6 +28,7 @@ export const taskRow = z.object({
   priority: nonempty,
   due_at: timestamp.nullable(),
   completed_at: timestamp.nullable(),
+  deleted_at: timestamp.nullable(),
   pet_id: id.nullable(),
   vehicle_id: id.nullable(),
   created_at: timestamp,

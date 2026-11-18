@@ -15,11 +15,29 @@ const pet = {
   created_at: "2026-11-17T12:00:00+00:00",
   updated_at: "2026-11-17T12:00:00+00:00",
 };
+const taskId = "44444444-4444-4444-8444-444444444444";
+const task = {
+  id: taskId,
+  user_id: userId,
+  title: "Renew registration",
+  description: null,
+  status: "pending",
+  priority: "medium",
+  due_at: null,
+  completed_at: null,
+  deleted_at: null,
+  pet_id: null,
+  vehicle_id: null,
+  created_at: "2026-11-17T12:00:00+00:00",
+  updated_at: "2026-11-17T12:00:00+00:00",
+};
 
 function fakeClient(data: unknown) {
   const chain = {
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
+    is: jest.fn().mockReturnThis(),
+    not: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
     range: jest.fn().mockResolvedValue({ data, error: null }),
     single: jest.fn().mockResolvedValue({ data, error: null }),
@@ -51,6 +69,73 @@ describe("typed repositories", () => {
     ).rejects.toThrow();
   });
 
+  it("lists active tasks by default and marked tasks through the restore path", async () => {
+    const active = fakeClient([task]);
+    await expect(
+      createRepositories(active.client).list("tasks", userId),
+    ).resolves.toEqual([task]);
+    expect(active.chain.is).toHaveBeenCalledWith("deleted_at", null);
+
+    const marked = { ...task, deleted_at: "2026-11-18T12:00:00+00:00" };
+    const deleted = fakeClient([marked]);
+    await expect(
+      createRepositories(deleted.client).listDeletedTasks(userId),
+    ).resolves.toEqual([marked]);
+    expect(deleted.chain.not).toHaveBeenCalledWith("deleted_at", "is", null);
+    expect(deleted.chain.eq).toHaveBeenCalledWith("user_id", userId);
+  });
+
+  it("marks and restores only the owner's task", async () => {
+    const marked = { ...task, deleted_at: "2026-11-18T12:00:00+00:00" };
+    const deleteClient = fakeClient(marked);
+    const online = async () => ({
+      isConnected: true,
+      isInternetReachable: true,
+    });
+    await expect(
+      createRepositories(deleteClient.client, online).markTaskDeleted(
+        userId,
+        taskId,
+      ),
+    ).resolves.toEqual(marked);
+    expect(deleteClient.chain.update).toHaveBeenCalledWith({
+      deleted_at: expect.any(String),
+    });
+    expect(
+      Date.parse(deleteClient.chain.update.mock.calls[0][0].deleted_at),
+    ).not.toBeNaN();
+    expect(deleteClient.chain.eq).toHaveBeenCalledWith("user_id", userId);
+    expect(deleteClient.chain.eq).toHaveBeenCalledWith("id", taskId);
+
+    const restoreClient = fakeClient(task);
+    await expect(
+      createRepositories(restoreClient.client, online).restoreTask(
+        userId,
+        taskId,
+      ),
+    ).resolves.toEqual(task);
+    expect(restoreClient.chain.update).toHaveBeenCalledWith({
+      deleted_at: null,
+    });
+    expect(restoreClient.chain.eq).toHaveBeenCalledWith("user_id", userId);
+    expect(restoreClient.chain.eq).toHaveBeenCalledWith("id", taskId);
+  });
+
+  it("keeps the marker out of ordinary task updates", async () => {
+    const { client, chain } = fakeClient(task);
+    const repository = createRepositories(client, async () => ({
+      isConnected: true,
+      isInternetReachable: true,
+    }));
+    await repository.update("tasks", userId, taskId, {
+      title: "Renew registration soon",
+      deleted_at: "2026-11-18T12:00:00+00:00",
+    } as Parameters<typeof repository.update<"tasks">>[3]);
+    expect(chain.update).toHaveBeenCalledWith({
+      title: "Renew registration soon",
+    });
+  });
+
   it("rejects offline writes before contacting Supabase", async () => {
     const { client, from } = fakeClient(pet);
     const repository = createRepositories(client, async () => ({
@@ -60,6 +145,12 @@ describe("typed repositories", () => {
     await expect(
       repository.create("pets", userId, { name: "Milo", species: "cat" }),
     ).rejects.toBeInstanceOf(OfflineWriteError);
+    await expect(
+      repository.markTaskDeleted(userId, taskId),
+    ).rejects.toBeInstanceOf(OfflineWriteError);
+    await expect(repository.restoreTask(userId, taskId)).rejects.toBeInstanceOf(
+      OfflineWriteError,
+    );
     expect(from).not.toHaveBeenCalled();
   });
 

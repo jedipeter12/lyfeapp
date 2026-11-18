@@ -20,6 +20,8 @@ export const entityKeys = {
   all: (userId: string, table: EntityTable) => ["user", userId, table] as const,
   list: (userId: string, table: EntityTable, page: number) =>
     [...entityKeys.all(userId, table), "list", page] as const,
+  deletedTasks: (userId: string, page: number) =>
+    [...entityKeys.all(userId, "tasks"), "deleted", page] as const,
   detail: (userId: string, table: EntityTable, id: string) =>
     [...entityKeys.all(userId, table), "detail", id] as const,
   profile: (userId: string) => ["user", userId, "profile"] as const,
@@ -67,6 +69,14 @@ export function useEntityList<T extends EntityTable>(
   });
 }
 
+export function useDeletedTasks(userId?: string, page = 0) {
+  return useQuery({
+    queryKey: entityKeys.deletedTasks(userId ?? "", page),
+    queryFn: () => requiredRepositories().listDeletedTasks(userId!, page),
+    enabled: Boolean(userId && repositories),
+  });
+}
+
 export function useEntity<T extends EntityTable>(
   table: T,
   userId?: string,
@@ -100,5 +110,22 @@ export function useUpdateEntity<T extends EntityTable>(
     mutationFn: ({ id, changes }: { id: string; changes: EntityUpdate<T> }) =>
       requiredRepositories().update(table, userId, id, changes),
     onSuccess: () => invalidateEntityQueries(client, userId, table),
+  });
+}
+
+export function useMarkTaskDeleted(userId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      requiredRepositories().markTaskDeleted(userId, id),
+    onSuccess: () => invalidateEntityQueries(client, userId, "tasks"),
+  });
+}
+
+export function useRestoreTask(userId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => requiredRepositories().restoreTask(userId, id),
+    onSuccess: () => invalidateEntityQueries(client, userId, "tasks"),
   });
 }

@@ -13,7 +13,7 @@ The frozen Architecture v1.0 lists task fields without a deletion marker. The ac
 - Default task lists, search, dashboard counts, due views, and future recurrence/reminder scheduling must exclude tasks with `deleted_at IS NOT NULL`. A restore path may read marked tasks. Marking a task must cancel any pending local notification when notifications are implemented.
 - Only tasks get this behavior in the MVP. Pets and vehicles retain the L—6 restriction. Account deletion remains a separate workflow.
 
-The L—8 typed repository and query cache work is currently in progress. The repository filter and mark/restore mutations must land before this can be exposed to users. The migration alone does not hide tasks in the app.
+The L—8 typed repository and query cache work is currently in progress. This change is stacked on L—8 and adds the default repository filter, a marked-task list, and mark/restore mutations. Task screens and local notifications are not implemented yet; those integrations must use the filtered repository and cancel pending notifications before exposing deletion to users.
 
 ## Alternatives and consequences
 

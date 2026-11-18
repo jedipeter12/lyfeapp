@@ -9,6 +9,7 @@ it("invalidates the changed user's entity keys without affecting another user", 
   client.setQueryData(entityKeys.detail(userId, "pets", "pet-id"), {});
   client.setQueryData(entityKeys.list(otherUserId, "pets", 0), []);
   client.setQueryData(entityKeys.list(userId, "tasks", 0), []);
+  client.setQueryData(entityKeys.deletedTasks(userId, 0), []);
 
   await invalidateEntityQueries(client, userId, "pets");
 
@@ -26,5 +27,9 @@ it("invalidates the changed user's entity keys without affecting another user", 
   expect(
     client.getQueryState(entityKeys.list(userId, "tasks", 0))?.isInvalidated,
   ).toBe(false);
+  await invalidateEntityQueries(client, userId, "tasks");
+  expect(
+    client.getQueryState(entityKeys.deletedTasks(userId, 0))?.isInvalidated,
+  ).toBe(true);
   client.clear();
 });
