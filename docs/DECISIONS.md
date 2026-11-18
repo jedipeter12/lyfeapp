@@ -4,21 +4,21 @@
 
 The owner-approved [Lyfe Architecture v1.0 (Frozen)](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) governs the MVP. It selects iOS and Android; React Native, Expo, Expo Router, and strict TypeScript; Supabase Auth, PostgreSQL, and private Storage; TanStack Query; Zod; and local notifications through an adapter. It defines the 16-table baseline, individual accounts, and online-first behavior. Changes to this baseline require an approved architecture decision record. The older proposals and open-choice table below predate that approval and do not override it.
 
-The L—3 navigation skeleton does not implement authentication or authorize production infrastructure. Recurrence occurrence persistence and destructive-operation policy remain open as the frozen architecture states.
+The L—3 navigation skeleton does not implement authentication or authorize production infrastructure. Recurrence occurrence persistence and the account deletion workflow remain open.
 
 Ticket L—5 implements the approved Supabase Auth choice and introduces `profiles` as the first versioned baseline migration. It uses Expo SecureStore for persisted sessions and separate development/production client configuration. This implementation does not settle the remaining schema, recurrence, or destructive-operation decisions, and it does not authorize production provisioning.
 
 ## Accepted L—6 decision: restricted individual deletion
 
-**Status:** Accepted by the owner, 2026-11-17. For the MVP, users may edit individual records and complete tasks, but the app does not offer deletion of individual tasks, pets, vehicles, or their child records. The authenticated role has no `DELETE` grant. Parent references use deferred `NO ACTION`, so a later deletion flow must explicitly handle linked tasks, history, custom fields, and attachments. There is no in-app archive behavior in this decision.
+**Status:** Accepted by the owner, 2026-11-17; amended for task visibility by ADR-001 below. The L—6 schema does not offer deletion of individual tasks, pets, vehicles, or their child records. The authenticated role has no `DELETE` grant. Parent references use deferred `NO ACTION`, so a later physical deletion flow must explicitly handle linked tasks, history, custom fields, and attachments.
 
 **Alternatives considered:** Archive and restore would need new state and behavior for linked records and reminders. Explicit cascading deletion would risk removing history and files unexpectedly. Restriction keeps the frozen 16-table baseline intact while those behaviors are designed separately.
 
-**Consequences:** Users cannot remove mistaken or obsolete records in the MVP; they can edit records, and tasks can be completed. Archive or individual deletion requires a future product decision and migration. Account deletion remains a separate required workflow: remove owned Storage objects through the Storage API, then delete the Auth user so application rows cascade through `profiles`. L—6 does not implement that workflow. This decision does not authorize a hosted migration, merge, or release.
+**Consequences:** Physical removal of mistaken or obsolete records remains unavailable in the MVP. The later ADR-001 allows tasks to be marked and filtered without physical deletion; pets and vehicles retain the L—6 restriction. Account deletion remains a separate required workflow: remove owned Storage objects through the Storage API, then delete the Auth user so application rows cascade through `profiles`. L—6 does not implement that workflow.
 
-## Proposed amendment: task-only soft deletion
+## Accepted amendment: task-only soft deletion
 
-[ADR-001](decisions/ADR-001-task-soft-delete.md) proposes a reversible `tasks.deleted_at` marker so tasks can be hidden from default MVP views. It is not approved or deployed. The accepted L—6 restriction continues to govern until the owner approves the amendment and the query and notification behavior is implemented.
+[ADR-001](decisions/ADR-001-task-soft-delete.md) was accepted by the owner on 2026-11-18. It adds a reversible `tasks.deleted_at` marker so tasks can be hidden from default MVP views. The L—6 restriction still governs physical deletion and all other entity types. The additive migration is not yet merged or deployed; repository filtering and notification behavior must be implemented before exposing this feature.
 
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 

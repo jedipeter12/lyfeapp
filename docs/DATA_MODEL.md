@@ -10,7 +10,7 @@ The migration enforces positive finite pet weights, nonnegative finite cost, non
 
 The [owner-approved decision](DECISIONS.md) restricts individual record deletion in the MVP. The database grants no row deletion to the app role. Parent foreign keys use deferred `NO ACTION`, requiring a future delete flow to handle children explicitly. There is no in-app archive behavior. Removing an Auth user cascades through `profiles` to all owned application rows. Storage objects are outside this migration; a later account deletion flow must remove those files through the Storage API before deleting the Auth user.
 
-Task-only soft deletion is proposed in [ADR-001](decisions/ADR-001-task-soft-delete.md). Its `deleted_at` column is not part of the applied L—6 migration. The proposed follow-up migration must not be applied before the architecture amendment is approved and task queries are ready to filter marked rows.
+Task-only soft deletion is approved in [ADR-001](decisions/ADR-001-task-soft-delete.md). Its `deleted_at` column is not part of the applied L—6 migration. The follow-up migration remains unmerged and unapplied; task queries must filter marked rows before the feature is exposed.
 
 ## Local verification
 

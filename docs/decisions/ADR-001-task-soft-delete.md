@@ -1,12 +1,12 @@
 # ADR-001: Task-only soft deletion
 
-**Status:** Proposed, 2026-11-18. Owner approval required before merge or deployment.
+**Status:** Accepted by the owner, 2026-11-18. Merge and hosted deployment remain separate steps.
 
 ## Context
 
 The frozen Architecture v1.0 lists task fields without a deletion marker. The accepted L—6 decision disallows individual physical deletion or archive behavior in the MVP. The owner has asked whether tasks could at least be marked and filtered out. This proposal changes that decision for tasks only and adds one column to the approved 16-table baseline.
 
-## Proposed decision
+## Decision
 
 - Add nullable `tasks.deleted_at timestamptz` in a new versioned migration. `NULL` means active; a timestamp means marked for deletion. Restoring sets it back to `NULL`.
 - Keep physical `DELETE` unavailable to the app role. Keep marked rows and their recurrence rules, reminders, attachments, and custom field values for restoration and account deletion.
