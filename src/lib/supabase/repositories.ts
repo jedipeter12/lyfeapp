@@ -2,6 +2,17 @@ import NetInfo from "@react-native-community/netinfo";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
+  customFieldDefinitionCreate,
+  customFieldDefinitionRow,
+  customFieldDefinitionUpdate,
+  customFieldModule,
+  customFieldValueRow,
+  parseCustomFieldValue,
+  type CustomFieldDefinition,
+  type CustomFieldModule,
+  type CustomFieldValue,
+} from "@/schemas/customFields";
+import {
   entitySchemas,
   profileRow,
   profileUpdate,
@@ -210,6 +221,239 @@ export function createRepositories(
         data,
         userId,
       ) as EntityRow<"tasks">;
+    },
+
+    async listCustomFieldDefinitions(
+      userId: string,
+      module: CustomFieldModule,
+      page = 0,
+    ): Promise<CustomFieldDefinition[]> {
+      z.uuid().parse(userId);
+      customFieldModule.parse(module);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      const start = page * 100;
+      const { data, error } = await client
+        .from("custom_field_definitions")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("module_type", module)
+        .order("id")
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) => {
+        const definition = parseOwned(
+          customFieldDefinitionRow,
+          value,
+          userId,
+        ) as CustomFieldDefinition;
+        if (definition.module_type !== module)
+          throw new Error("Unexpected custom field module");
+        return definition;
+      });
+    },
+
+    async getCustomFieldDefinition(
+      userId: string,
+      module: CustomFieldModule,
+      definitionId: string,
+    ): Promise<CustomFieldDefinition> {
+      z.uuid().parse(userId);
+      customFieldModule.parse(module);
+      z.uuid().parse(definitionId);
+      const { data, error } = await client
+        .from("custom_field_definitions")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("module_type", module)
+        .eq("id", definitionId)
+        .single();
+      if (error) throw error;
+      const definition = parseOwned(
+        customFieldDefinitionRow,
+        data,
+        userId,
+      ) as CustomFieldDefinition;
+      if (definition.module_type !== module)
+        throw new Error("Unexpected custom field module");
+      return definition;
+    },
+
+    async createCustomFieldDefinition(
+      userId: string,
+      input: z.input<typeof customFieldDefinitionCreate>,
+    ): Promise<CustomFieldDefinition> {
+      z.uuid().parse(userId);
+      const payload = customFieldDefinitionCreate.parse(input);
+      await assertOnline();
+      const { data, error } = await client
+        .from("custom_field_definitions")
+        .insert({ ...payload, user_id: userId })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const definition = parseOwned(
+        customFieldDefinitionRow,
+        data,
+        userId,
+      ) as CustomFieldDefinition;
+      if (definition.module_type !== payload.module_type)
+        throw new Error("Unexpected custom field module");
+      return definition;
+    },
+
+    async renameCustomFieldDefinition(
+      userId: string,
+      module: CustomFieldModule,
+      definitionId: string,
+      name: string,
+    ): Promise<CustomFieldDefinition> {
+      z.uuid().parse(userId);
+      customFieldModule.parse(module);
+      z.uuid().parse(definitionId);
+      const payload = customFieldDefinitionUpdate.parse({ name });
+      await assertOnline();
+      const { data, error } = await client
+        .from("custom_field_definitions")
+        .update(payload)
+        .eq("user_id", userId)
+        .eq("module_type", module)
+        .eq("id", definitionId)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const definition = parseOwned(
+        customFieldDefinitionRow,
+        data,
+        userId,
+      ) as CustomFieldDefinition;
+      if (definition.module_type !== module)
+        throw new Error("Unexpected custom field module");
+      return definition;
+    },
+
+    async listCustomFieldValues(
+      userId: string,
+      module: CustomFieldModule,
+      entityId: string,
+      page = 0,
+    ): Promise<CustomFieldValue[]> {
+      z.uuid().parse(userId);
+      customFieldModule.parse(module);
+      z.uuid().parse(entityId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      await this.get(module, userId, entityId);
+      const start = page * 100;
+      const { data, error } = await client
+        .from("custom_field_values")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("entity_id", entityId)
+        .order("id")
+        .range(start, start + 99);
+      if (error) throw error;
+      const values = (data ?? []).map((value) => {
+        const row = parseOwned(
+          customFieldValueRow,
+          value,
+          userId,
+        ) as CustomFieldValue;
+        if (row.entity_id !== entityId)
+          throw new Error("Unexpected custom field entity");
+        return row;
+      });
+      if (values.length === 0) return values;
+      const { data: definitionData, error: definitionError } = await client
+        .from("custom_field_definitions")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("module_type", module)
+        .in(
+          "id",
+          values.map((value) => value.definition_id),
+        );
+      if (definitionError) throw definitionError;
+      const definitions = new Map(
+        (definitionData ?? []).map((value) => {
+          const definition = parseOwned(
+            customFieldDefinitionRow,
+            value,
+            userId,
+          ) as CustomFieldDefinition;
+          if (definition.module_type !== module)
+            throw new Error("Unexpected custom field module");
+          return [definition.id, definition] as const;
+        }),
+      );
+      for (const value of values) {
+        const definition = definitions.get(value.definition_id);
+        if (!definition) throw new Error("Custom field definition unavailable");
+        parseCustomFieldValue(definition, value.value);
+      }
+      return values;
+    },
+
+    async saveCustomFieldValue(
+      userId: string,
+      module: CustomFieldModule,
+      entityId: string,
+      definitionId: string,
+      value: unknown,
+    ): Promise<CustomFieldValue> {
+      z.uuid().parse(userId);
+      customFieldModule.parse(module);
+      z.uuid().parse(entityId);
+      z.uuid().parse(definitionId);
+      await assertOnline();
+      const [definition] = await Promise.all([
+        this.getCustomFieldDefinition(userId, module, definitionId),
+        this.get(module, userId, entityId),
+      ]);
+      const parsedValue = parseCustomFieldValue(definition, value);
+      const { data: current, error: readError } = await client
+        .from("custom_field_values")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("definition_id", definitionId)
+        .eq("entity_id", entityId)
+        .maybeSingle();
+      if (readError) throw readError;
+      if (current) {
+        const previous = parseOwned(
+          customFieldValueRow,
+          current,
+          userId,
+        ) as CustomFieldValue;
+        if (
+          previous.definition_id !== definitionId ||
+          previous.entity_id !== entityId
+        )
+          throw new Error("Unexpected custom field reference");
+      }
+      const write = current
+        ? client
+            .from("custom_field_values")
+            .update({ value: parsedValue })
+            .eq("user_id", userId)
+            .eq("id", (current as CustomFieldValue).id)
+        : client.from("custom_field_values").insert({
+            user_id: userId,
+            definition_id: definitionId,
+            entity_id: entityId,
+            value: parsedValue,
+          });
+      const { data, error } = await write.select("*").single();
+      if (error) throw error;
+      const row = parseOwned(
+        customFieldValueRow,
+        data,
+        userId,
+      ) as CustomFieldValue;
+      if (row.definition_id !== definitionId || row.entity_id !== entityId)
+        throw new Error("Unexpected custom field reference");
+      parseCustomFieldValue(definition, row.value);
+      return row;
     },
   };
 }

@@ -57,6 +57,12 @@ The task list repository excludes rows with `deleted_at` set. `listDeletedTasks`
 
 The theme tests check WCAG AA contrast for regular text and 3:1 contrast for visible input borders. Component tests check button disabled behavior, input labels, and error announcements. These automated checks do not replace a VoiceOver/TalkBack pass on a device, large-text layout review, or visual checks of both color schemes before release.
 
+## L—10 custom fields
+
+`src/schemas/customFields.ts` validates definitions and scalar values for text, number, date, boolean, and single-select fields. `createRepositories` lists and creates definitions for `tasks`, `pets`, and `vehicles`, renames definitions, lists values for an owned entity, and saves a value after checking the definition's module, the entity owner, and the value type. Saves insert a new row or update only `value` on an existing row because the authenticated database role has column-limited UPDATE grants. `src/lib/query/customFields.ts` provides user-scoped query hooks and invalidation. Definitions and values cannot be physically deleted through the app role; field type, options, and module cannot be changed after creation. Module feature screens should use these hooks when their entity editing flows are built.
+
+The existing L—6 migration provides server-side ownership, entity/module, and value checks. `supabase/tests/l10_custom_fields.sql` exercises all five types and rejects cross-module, cross-user, and invalid values. Run it only in a disposable local PostgreSQL database after `l6_auth_stub.sql` and all three migrations in timestamp order. The test rolls back its synthetic data. It does not exercise the hosted Data API or device UI.
+
 ## Security and privacy
 
 Never commit credentials or real personal information. `.gitignore` excludes common local secret files, but ignore rules are not a secret scanner. Inspect staged changes before committing. Enable GitHub secret scanning and dependency alerts in repository settings if available; those settings are outside the tracked repository and have not been verified here. `npm ci` currently reports moderate dependency advisories; assess those separately before adding an audit gate or upgrading Expo dependencies.
