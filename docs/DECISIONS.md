@@ -18,7 +18,11 @@ Ticket L—5 implements the approved Supabase Auth choice and introduces `profil
 
 ## Accepted amendment: task-only soft deletion
 
-[ADR-001](decisions/ADR-001-task-soft-delete.md) was accepted by the owner on 2026-11-18. It adds a reversible `tasks.deleted_at` marker so tasks can be hidden from default MVP views. The L—6 restriction still governs physical deletion and all other entity types. The additive migration is not yet merged or deployed. Repository filtering and mark/restore methods are in the stacked PR; task UI and notification behavior must be integrated before exposing this feature.
+[ADR-001](decisions/ADR-001-task-soft-delete.md) was accepted by the owner on 2026-11-18. It adds a reversible `tasks.deleted_at` marker so tasks can be hidden from default MVP views. The L—6 restriction still governs physical deletion and all other entity types. The additive migration and repository filtering and mark/restore methods are merged; the migration was applied to the Lyfe development project on 2026-11-18. Task UI and notification behavior must be integrated before exposing this feature.
+
+## Proposed L—11 decision: attachment deletion
+
+[ADR-002](decisions/ADR-002-attachment-deletion.md) proposes a narrow exception to the L—6 restriction for owner deletion of attachment metadata and private Storage objects. L—11 requires delete, but the current app role cannot delete attachment rows. The proposal is not accepted; do not implement its migration, bucket, or client deletion path before an owner decision.
 
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 

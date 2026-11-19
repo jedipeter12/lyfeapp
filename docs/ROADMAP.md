@@ -16,7 +16,8 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 - Ticket L—8's typed repository and query-cache foundation was merged in [PR #7](https://github.com/jedipeter12/lyfeapp/pull/7) on 2026-11-18. Account is its first screen integration; task, pet, and vehicle UI remains in later tickets.
 - Ticket L—9's accessible light/dark app shell and shared controls were merged in [PR #11](https://github.com/jedipeter12/lyfeapp/pull/11). Auth, account, and placeholder screens use the shared theme and loading/empty/error components. Device accessibility review remains outstanding.
 - Ticket L—10's custom-field client schemas, owner/module-checked repositories, query hooks, and local SQL coverage were merged in [PR #12](https://github.com/jedipeter12/lyfeapp/pull/12). The baseline database schema already supplies server-side value and ownership enforcement. Module screens do not yet expose custom fields.
-- Ticket L—7's adversarial local SQL test is on `codex/l-7-ownership-security` for review. It covers read isolation on all 16 tables and cross-user relationship rejection. L—11 private attachments must wait for L—7 review and merge under its ticket dependency.
+- Ticket L—7's adversarial local SQL test was merged in [PR #13](https://github.com/jedipeter12/lyfeapp/pull/13). It covers read isolation on all 16 tables and cross-user relationship rejection.
+- L—11 private attachments is now unblocked by L—7, but its required delete behavior conflicts with the accepted L—6 restriction on individual attachment deletion. [ADR-002](decisions/ADR-002-attachment-deletion.md) proposes a narrow owner-delete policy; implementation of the affected storage and metadata flows awaits the owner decision.
 - The owner approved task-only soft deletion in `docs/decisions/ADR-001-task-soft-delete.md` on 2026-11-18. The additive migration, SQL test, and repository filter/mark/restore methods were merged in [PR #8](https://github.com/jedipeter12/lyfeapp/pull/8). Migration `20261118060031_task_soft_delete` was applied to the Lyfe development project on 2026-11-18. Hosted verification found a nullable `tasks.deleted_at` timestamp, authenticated UPDATE access to that column, task RLS still enabled, and no authenticated DELETE privilege; a follow-up CLI dry run found no pending migrations. Task screens and notification behavior must follow before exposing this feature.
 - In an isolated local Supabase stack, the L—5 migration applied, synthetic owner/anonymous RLS and cascade checks passed, and signup, profile provisioning/editing, sign-out, and password sign-in succeeded through the local API. The temporary stack was stopped afterward.
 - On the hosted development project, `public.profiles` has RLS, owner-scoped SELECT/UPDATE policies, and the expected profile triggers. Anonymous REST access to the table was denied. Email signup is enabled and confirmation is required. Device signup, email confirmation, and session restoration have not yet been verified.
@@ -29,7 +30,7 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 
 ## Next
 
-- Review and merge L—7's ownership RLS and cross-user security tests, then take L—11 private attachments.
+- Decide ADR-002's attachment deletion policy, then implement L—11's private bucket, validated targets, upload/read/delete flows, and security tests.
 - Verify hosted signup with an organization member's email address, confirm it, edit the profile, restart the app to check session restoration, and sign out. Use a separate production project before a production release.
 
 ## Known issues and risks
