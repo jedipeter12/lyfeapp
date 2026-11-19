@@ -63,6 +63,10 @@ The theme tests check WCAG AA contrast for regular text and 3:1 contrast for vis
 
 The existing L—6 migration provides server-side ownership, entity/module, and value checks. `supabase/tests/l10_custom_fields.sql` exercises all five types and rejects cross-module, cross-user, and invalid values. Run it only in a disposable local PostgreSQL database after `l6_auth_stub.sql` and all three migrations in timestamp order. The test rolls back its synthetic data. It does not exercise the hosted Data API or device UI.
 
+## L—7 ownership security tests
+
+`supabase/tests/l7_ownership_security.sql` checks owner read isolation on all 16 application tables with two fictional accounts. It also verifies that the app role cannot delete rows or change ownership, that anonymous clients cannot select the tables, and that cross-user task, child-record, custom-field, and attachment links are rejected. Run it only in a disposable local PostgreSQL database after `l6_auth_stub.sql` and all three migrations in timestamp order, using `psql -v ON_ERROR_STOP=1 -f supabase/tests/l7_ownership_security.sql`. The test rolls back its synthetic rows. This local SQL test does not exercise hosted JWT issuance, the Data API, or Storage policies; L—11 still requires its own private-bucket security tests after L—7 is reviewed and merged.
+
 ## Security and privacy
 
 Never commit credentials or real personal information. `.gitignore` excludes common local secret files, but ignore rules are not a secret scanner. Inspect staged changes before committing. Enable GitHub secret scanning and dependency alerts in repository settings if available; those settings are outside the tracked repository and have not been verified here. `npm ci` currently reports moderate dependency advisories; assess those separately before adding an audit gate or upgrading Expo dependencies.
