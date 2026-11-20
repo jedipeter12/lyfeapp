@@ -6,6 +6,8 @@ The owner-approved [Lyfe Architecture v1.0 (Frozen)](https://app.notion.com/p/41
 
 The L—3 navigation skeleton does not implement authentication or authorize production infrastructure. Recurrence occurrence persistence and the account deletion workflow remain open.
 
+[ADR-003](decisions/ADR-003-recurrence-occurrence-persistence.md) proposes an occurrence-history table, rule anchor, and calendar/completion policies for L—13. It is awaiting owner decision; no recurrence schema change or behavior is approved yet.
+
 Ticket L—5 implements the approved Supabase Auth choice and introduces `profiles` as the first versioned baseline migration. It uses Expo SecureStore for persisted sessions and separate development/production client configuration. This implementation does not settle the remaining schema, recurrence, or destructive-operation decisions, and it does not authorize production provisioning.
 
 ## Accepted L—6 decision: restricted individual deletion
