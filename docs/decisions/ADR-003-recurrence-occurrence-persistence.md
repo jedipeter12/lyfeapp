@@ -22,6 +22,8 @@ Store the original local date and wall-clock time as immutable rule anchor field
 
 On migration, do not infer missing historical occurrences from an existing `tasks.completed_at`. Report any existing recurrence rules, duplicate rules per task, or completed tasks linked to rules for review before backfilling or adding the one-rule constraint. Do not rewrite the applied baseline migration.
 
+A read-only aggregate query of the designated development project on 2026-11-20 found zero recurrence rules, zero completed tasks linked to rules, and zero tasks with multiple rules. No development recurrence backfill is currently needed. Recheck immediately before any migration because the data may change; this inspection says nothing about a future production project.
+
 ## Calendar policy proposed for approval
 
 - Daily uses every `interval` local calendar days. Weekly uses selected weekdays (`0` Sunday through `6` Saturday), with `interval` counting weeks from the anchor week; when weekdays are absent, use the anchor weekday. Monthly and yearly use the anchor day, clamping to the last day of a shorter month, so a January 31 anchor returns to March 31 and a February 29 yearly anchor returns to February 29 in leap years.
