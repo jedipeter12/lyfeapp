@@ -4,9 +4,9 @@ The frozen [Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f610
 
 Every table contains an owner `user_id`. App roles can select, insert, and update only their own rows, with column limited updates that cannot change identity and ownership. The L—6 baseline grants no app-role `DELETE`; accepted ADR-002 adds owner-only attachment deletion in a later migration. Child tables use `(user_id, parent_id)` foreign keys so a row cannot link to another account's task, pet, vehicle, or custom field definition. Tasks allow one pet or vehicle link at most. All 16 tables have RLS. The only polymorphic references are attachments and custom field values; caller rights triggers check entity existence and ownership on insert and reference changes.
 
-The migration enforces positive finite pet weights, nonnegative finite cost, nonnegative mileage, odometer, and attachment size, supported recurrence frequencies and weekdays, valid module and custom field types, and shape and type checks for custom field values. VINs are uppercased and whitespace removed before enforcing per user uniqueness. Text task status, priority, and reminder status remain nonempty but open vocabularies until feature behavior is specified. Recurrence occurrence persistence is still undecided; this migration does not add an occurrence table or completion history.
+The migration enforces positive finite pet weights, nonnegative finite cost, nonnegative mileage, odometer, and attachment size, supported recurrence frequencies and weekdays, valid module and custom field types, and shape and type checks for custom field values. VINs are uppercased and whitespace removed before enforcing per user uniqueness. Text task status, priority, and reminder status remain nonempty but open vocabularies until feature behavior is specified. This migration does not add an occurrence table or completion history; the later ADR-003 settles that extension.
 
-[ADR-003](decisions/ADR-003-recurrence-occurrence-persistence.md) proposes the L—13 occurrence persistence extension. It is not accepted or migrated; the 16-table baseline remains the implemented model.
+[ADR-003](decisions/ADR-003-recurrence-occurrence-persistence.md) approves the L—13 occurrence persistence extension. It has not been migrated; the 16-table baseline remains the implemented model.
 
 ## Approved MVP delete behavior
 
