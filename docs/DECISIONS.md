@@ -4,7 +4,9 @@
 
 The owner-approved [Lyfe Architecture v1.0 (Frozen)](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) governs the MVP. It selects iOS and Android; React Native, Expo, Expo Router, and strict TypeScript; Supabase Auth, PostgreSQL, and private Storage; TanStack Query; Zod; and local notifications through an adapter. It defines the 16-table baseline, individual accounts, and online-first behavior. Changes to this baseline require an approved architecture decision record. The older proposals and open-choice table below predate that approval and do not override it.
 
-The L—3 navigation skeleton does not implement authentication or authorize production infrastructure. Recurrence occurrence persistence and the account deletion workflow remain open.
+The L—3 navigation skeleton does not implement authentication or authorize production infrastructure. The account deletion workflow remains open.
+
+[ADR-003](decisions/ADR-003-recurrence-occurrence-persistence.md) was accepted by the owner on 2026-11-20. It approves an occurrence-history table, rule anchor, and calendar/completion policies for L—13. Implementation and hosted migration remain separate steps.
 
 Ticket L—5 implements the approved Supabase Auth choice and introduces `profiles` as the first versioned baseline migration. It uses Expo SecureStore for persisted sessions and separate development/production client configuration. This implementation does not settle the remaining schema, recurrence, or destructive-operation decisions, and it does not authorize production provisioning.
 
