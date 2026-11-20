@@ -49,7 +49,7 @@ Use `npm run ios` or `npm run android` to launch through Expo Go on a matching s
 
 `src/lib/query/entities.ts` exposes user-scoped TanStack Query hooks. List queries page by 100 rows using stable `id` order. Mutations invalidate the changed user's list and detail queries; profile saves replace the cached profile with the returned row. The cache is memory-only, with a 30-second stale time and five-minute garbage collection. `QueryProvider` connects native network and app focus state and clears cached data when the signed-in user changes or signs out. Use these hooks from screens; add child-record repositories and schemas as their feature tickets define behavior. The L—6 schema is already applied to the Lyfe development project; authenticated device flows still need testing.
 
-The task list repository excludes rows with `deleted_at` set. `listDeletedTasks` explicitly fetches marked tasks for restoration. `markTaskDeleted` and `restoreTask` update only that marker and invalidate the task query cache through their hooks. The migration is applied to the development project; task screens and notification cleanup are not yet implemented.
+The task list repository excludes rows with `deleted_at` set. `listDeletedTasks` explicitly fetches marked tasks for restoration. `markTaskDeleted` and `restoreTask` update only that marker and invalidate the task query cache through their hooks. The migration is applied to the development project; task soft-delete UI and notification cleanup are not yet implemented.
 
 ## L—9 app UI conventions
 
