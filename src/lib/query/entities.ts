@@ -22,6 +22,17 @@ export const entityKeys = {
     [...entityKeys.all(userId, table), "list", page] as const,
   deletedTasks: (userId: string, page: number) =>
     [...entityKeys.all(userId, "tasks"), "deleted", page] as const,
+  tasksByCompletion: (
+    userId: string,
+    completion: "all" | "pending" | "completed",
+    page: number,
+  ) =>
+    [
+      ...entityKeys.all(userId, "tasks"),
+      "completion",
+      completion,
+      page,
+    ] as const,
   detail: (userId: string, table: EntityTable, id: string) =>
     [...entityKeys.all(userId, table), "detail", id] as const,
   profile: (userId: string) => ["user", userId, "profile"] as const,
@@ -73,6 +84,19 @@ export function useDeletedTasks(userId?: string, page = 0) {
   return useQuery({
     queryKey: entityKeys.deletedTasks(userId ?? "", page),
     queryFn: () => requiredRepositories().listDeletedTasks(userId!, page),
+    enabled: Boolean(userId && repositories),
+  });
+}
+
+export function useTasksByCompletion(
+  userId?: string,
+  completion: "all" | "pending" | "completed" = "all",
+  page = 0,
+) {
+  return useQuery({
+    queryKey: entityKeys.tasksByCompletion(userId ?? "", completion, page),
+    queryFn: () =>
+      requiredRepositories().listTasksByCompletion(userId!, completion, page),
     enabled: Boolean(userId && repositories),
   });
 }
