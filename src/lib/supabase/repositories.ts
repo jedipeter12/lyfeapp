@@ -125,6 +125,30 @@ export function createRepositories(
       ) as EntityRow<"tasks">[];
     },
 
+    async listTasksByCompletion(
+      userId: string,
+      completion: "all" | "pending" | "completed",
+      page = 0,
+    ): Promise<EntityRow<"tasks">[]> {
+      z.uuid().parse(userId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      const start = page * 100;
+      let query = client
+        .from("tasks")
+        .select("*")
+        .eq("user_id", userId)
+        .is("deleted_at", null);
+      if (completion === "pending") query = query.is("completed_at", null);
+      if (completion === "completed")
+        query = query.not("completed_at", "is", null);
+      const { data, error } = await query.order("id").range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) =>
+        parseOwned(entitySchemas.tasks.row, value, userId),
+      ) as EntityRow<"tasks">[];
+    },
+
     async get<T extends EntityTable>(
       table: T,
       userId: string,

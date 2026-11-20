@@ -85,6 +85,38 @@ describe("typed repositories", () => {
     expect(deleted.chain.eq).toHaveBeenCalledWith("user_id", userId);
   });
 
+  it("filters task completion on the server while excluding marked tasks", async () => {
+    const pending = fakeClient([task]);
+    await expect(
+      createRepositories(pending.client).listTasksByCompletion(
+        userId,
+        "pending",
+        1,
+      ),
+    ).resolves.toEqual([task]);
+    expect(pending.chain.eq).toHaveBeenCalledWith("user_id", userId);
+    expect(pending.chain.is).toHaveBeenCalledWith("deleted_at", null);
+    expect(pending.chain.is).toHaveBeenCalledWith("completed_at", null);
+    expect(pending.chain.range).toHaveBeenCalledWith(100, 199);
+
+    const completed = fakeClient([
+      {
+        ...task,
+        status: "completed",
+        completed_at: "2026-11-18T12:00:00+00:00",
+      },
+    ]);
+    await createRepositories(completed.client).listTasksByCompletion(
+      userId,
+      "completed",
+    );
+    expect(completed.chain.not).toHaveBeenCalledWith(
+      "completed_at",
+      "is",
+      null,
+    );
+  });
+
   it("marks and restores only the owner's task", async () => {
     const marked = { ...task, deleted_at: "2026-11-18T12:00:00+00:00" };
     const deleteClient = fakeClient(marked);

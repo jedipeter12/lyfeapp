@@ -1,10 +1,448 @@
-import { PlaceholderScreen } from "@/components/PlaceholderScreen";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AppButton } from "@/components/ui/AppButton";
+import { AppScreen } from "@/components/ui/AppScreen";
+import { AppTextField } from "@/components/ui/AppTextField";
+import { FeedbackState } from "@/components/ui/FeedbackState";
+import {
+  useCreateEntity,
+  useEntity,
+  useEntityList,
+  useTasksByCompletion,
+  useUpdateEntity,
+} from "@/lib/query/entities";
+import { useAuth } from "@/lib/supabase/AuthProvider";
+import { OfflineWriteError } from "@/lib/supabase/repositories";
+import type { EntityRow } from "@/schemas/entities";
+import { spacing, radius, useAppTheme } from "@/theme";
+import {
+  initialTaskDraft,
+  taskInputFromDraft,
+  type TaskDraft,
+} from "@/features/tasks/taskForm";
+
+type Completion = "all" | "pending" | "completed";
 
 export default function TasksScreen() {
+  const { session } = useAuth();
+  const userId = session?.user.id ?? "";
+  const { colors } = useAppTheme();
+  const [filter, setFilter] = useState<Completion>("all");
+  const [page, setPage] = useState(0);
+  const [petPage, setPetPage] = useState(0);
+  const [vehiclePage, setVehiclePage] = useState(0);
+  const [draft, setDraft] = useState<TaskDraft | null>(null);
+  const [editing, setEditing] = useState<EntityRow<"tasks"> | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const tasks = useTasksByCompletion(userId, filter, page);
+  const pets = useEntityList("pets", userId, petPage);
+  const vehicles = useEntityList("vehicles", userId, vehiclePage);
+  const linkedPet = useEntity("pets", userId, draft?.petId ?? undefined);
+  const linkedVehicle = useEntity(
+    "vehicles",
+    userId,
+    draft?.vehicleId ?? undefined,
+  );
+  const createTask = useCreateEntity("tasks", userId);
+  const updateTask = useUpdateEntity("tasks", userId);
+
+  function editTask(task?: EntityRow<"tasks">) {
+    setEditing(task ?? null);
+    setDraft(initialTaskDraft(task));
+    setMessage("");
+  }
+
+  async function save() {
+    if (!draft || busyId) return;
+    let input: ReturnType<typeof taskInputFromDraft>;
+    try {
+      input = taskInputFromDraft(draft);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Check task details.",
+      );
+      return;
+    }
+    setBusyId("save");
+    setMessage("");
+    try {
+      if (editing) {
+        const { status: _status, ...changes } = input;
+        await updateTask.mutateAsync({ id: editing.id, changes });
+      } else {
+        await createTask.mutateAsync(input);
+      }
+      setDraft(null);
+      setEditing(null);
+      setPage(0);
+      setMessage("Task saved.");
+    } catch (error) {
+      setMessage(
+        error instanceof OfflineWriteError
+          ? error.message
+          : "Could not save task. Check the linked item and try again.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function toggleCompletion(task: EntityRow<"tasks">) {
+    if (busyId) return;
+    setBusyId(task.id);
+    setMessage("");
+    try {
+      const completed = Boolean(task.completed_at);
+      await updateTask.mutateAsync({
+        id: task.id,
+        changes: {
+          status: completed ? "pending" : "completed",
+          completed_at: completed ? null : new Date().toISOString(),
+        },
+      });
+      setMessage(completed ? "Task reopened." : "Task completed.");
+    } catch (error) {
+      setMessage(
+        error instanceof OfflineWriteError
+          ? error.message
+          : "Could not update task. Try again.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function choice(
+    label: string,
+    selected: boolean,
+    onPress: () => void,
+    key = label,
+  ) {
+    return (
+      <Pressable
+        key={key}
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+        onPress={onPress}
+        style={[
+          styles.choice,
+          {
+            backgroundColor: selected ? colors.primary : colors.surface,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <Text style={{ color: selected ? colors.onPrimary : colors.text }}>
+          {label}
+        </Text>
+      </Pressable>
+    );
+  }
+
   return (
-    <PlaceholderScreen
-      title="Tasks"
-      description="Your tasks will appear here."
-    />
+    <AppScreen scroll>
+      <Text
+        accessibilityRole="header"
+        style={[styles.title, { color: colors.text }]}
+      >
+        Tasks
+      </Text>
+      {draft ? (
+        <View style={styles.section}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.heading, { color: colors.text }]}
+          >
+            {editing ? "Edit task" : "New task"}
+          </Text>
+          <AppTextField
+            label="Title"
+            value={draft.title}
+            maxLength={200}
+            onChangeText={(title) => setDraft({ ...draft, title })}
+          />
+          <AppTextField
+            label="Description (optional)"
+            value={draft.description}
+            multiline
+            onChangeText={(description) => setDraft({ ...draft, description })}
+          />
+          <Text style={{ color: colors.text }}>Priority</Text>
+          <View style={styles.choices}>
+            {(["low", "medium", "high"] as const).map((priority) =>
+              choice(priority, draft.priority === priority, () =>
+                setDraft({ ...draft, priority }),
+              ),
+            )}
+          </View>
+          <AppTextField
+            label="Due date (YYYY-MM-DD, optional)"
+            value={draft.dueDate}
+            placeholder="2027-05-01"
+            keyboardType="numbers-and-punctuation"
+            onChangeText={(dueDate) => setDraft({ ...draft, dueDate })}
+          />
+          {draft.dueDate ? (
+            <AppTextField
+              label="Due time (HH:mm, device time zone)"
+              value={draft.dueTime}
+              placeholder="09:00"
+              keyboardType="numbers-and-punctuation"
+              onChangeText={(dueTime) => setDraft({ ...draft, dueTime })}
+            />
+          ) : null}
+          <Text style={{ color: colors.text }}>Linked item (optional)</Text>
+          {draft.petId && linkedPet.data ? (
+            <Text style={{ color: colors.muted }}>
+              Selected pet: {linkedPet.data.name}
+            </Text>
+          ) : null}
+          {draft.vehicleId && linkedVehicle.data ? (
+            <Text style={{ color: colors.muted }}>
+              Selected vehicle: {linkedVehicle.data.year}{" "}
+              {linkedVehicle.data.make} {linkedVehicle.data.model}
+            </Text>
+          ) : null}
+          <View style={styles.choices}>
+            {choice("None", !draft.petId && !draft.vehicleId, () =>
+              setDraft({ ...draft, petId: null, vehicleId: null }),
+            )}
+          </View>
+          {pets.isError ? (
+            <FeedbackState
+              kind="error"
+              title="Could not load pets"
+              actionLabel="Retry"
+              onAction={() => void pets.refetch()}
+            />
+          ) : pets.isPending ? (
+            <FeedbackState kind="loading" title="Loading pets…" />
+          ) : (
+            <>
+              <View style={styles.choices}>
+                {pets.data?.map((pet) =>
+                  choice(
+                    `Pet: ${pet.name}`,
+                    draft.petId === pet.id,
+                    () =>
+                      setDraft({ ...draft, petId: pet.id, vehicleId: null }),
+                    pet.id,
+                  ),
+                )}
+              </View>
+              {petPage > 0 || pets.data?.length === 100 ? (
+                <View style={styles.choices}>
+                  {petPage > 0 ? (
+                    <AppButton
+                      variant="secondary"
+                      onPress={() => setPetPage(petPage - 1)}
+                    >
+                      Previous pets
+                    </AppButton>
+                  ) : null}
+                  {pets.data?.length === 100 ? (
+                    <AppButton
+                      variant="secondary"
+                      onPress={() => setPetPage(petPage + 1)}
+                    >
+                      More pets
+                    </AppButton>
+                  ) : null}
+                </View>
+              ) : null}
+            </>
+          )}
+          {vehicles.isError ? (
+            <FeedbackState
+              kind="error"
+              title="Could not load vehicles"
+              actionLabel="Retry"
+              onAction={() => void vehicles.refetch()}
+            />
+          ) : vehicles.isPending ? (
+            <FeedbackState kind="loading" title="Loading vehicles…" />
+          ) : (
+            <>
+              <View style={styles.choices}>
+                {vehicles.data?.map((vehicle) =>
+                  choice(
+                    `Vehicle: ${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+                    draft.vehicleId === vehicle.id,
+                    () =>
+                      setDraft({
+                        ...draft,
+                        petId: null,
+                        vehicleId: vehicle.id,
+                      }),
+                    vehicle.id,
+                  ),
+                )}
+              </View>
+              {vehiclePage > 0 || vehicles.data?.length === 100 ? (
+                <View style={styles.choices}>
+                  {vehiclePage > 0 ? (
+                    <AppButton
+                      variant="secondary"
+                      onPress={() => setVehiclePage(vehiclePage - 1)}
+                    >
+                      Previous vehicles
+                    </AppButton>
+                  ) : null}
+                  {vehicles.data?.length === 100 ? (
+                    <AppButton
+                      variant="secondary"
+                      onPress={() => setVehiclePage(vehiclePage + 1)}
+                    >
+                      More vehicles
+                    </AppButton>
+                  ) : null}
+                </View>
+              ) : null}
+            </>
+          )}
+          <AppButton onPress={() => void save()} busy={busyId === "save"}>
+            Save task
+          </AppButton>
+          <AppButton
+            variant="secondary"
+            onPress={() => {
+              setDraft(null);
+              setEditing(null);
+              setMessage("");
+            }}
+          >
+            Cancel
+          </AppButton>
+        </View>
+      ) : (
+        <>
+          <AppButton onPress={() => editTask()}>New task</AppButton>
+          <View style={styles.choices}>
+            {(["all", "pending", "completed"] as const).map((value) =>
+              choice(value, filter === value, () => {
+                setFilter(value);
+                setPage(0);
+              }),
+            )}
+          </View>
+          {tasks.isPending ? (
+            <FeedbackState kind="loading" title="Loading tasks…" />
+          ) : tasks.isError ? (
+            <FeedbackState
+              kind="error"
+              title="Could not load tasks"
+              actionLabel="Try again"
+              onAction={() => void tasks.refetch()}
+            />
+          ) : tasks.data?.length === 0 ? (
+            <FeedbackState
+              kind="empty"
+              title={page ? "No more tasks" : "No tasks in this view"}
+            />
+          ) : (
+            tasks.data?.map((task) => (
+              <View
+                key={task.id}
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.heading, { color: colors.text }]}>
+                  {task.title}
+                </Text>
+                {task.description ? (
+                  <Text style={{ color: colors.muted }}>
+                    {task.description}
+                  </Text>
+                ) : null}
+                <Text style={{ color: colors.muted }}>
+                  {task.completed_at ? "Completed" : "Pending"} ·{" "}
+                  {task.priority} priority
+                  {task.due_at
+                    ? ` · Due ${new Date(task.due_at).toLocaleString()}`
+                    : ""}
+                </Text>
+                {task.pet_id ? (
+                  <Text style={{ color: colors.muted }}>
+                    Linked pet:{" "}
+                    {pets.data?.find((pet) => pet.id === task.pet_id)?.name ??
+                      "Pet"}
+                  </Text>
+                ) : null}
+                {task.vehicle_id ? (
+                  <Text style={{ color: colors.muted }}>
+                    Linked vehicle:{" "}
+                    {vehicles.data?.find(
+                      (vehicle) => vehicle.id === task.vehicle_id,
+                    )?.model ?? "Vehicle"}
+                  </Text>
+                ) : null}
+                <AppButton variant="secondary" onPress={() => editTask(task)}>
+                  Edit
+                </AppButton>
+                <AppButton
+                  onPress={() => void toggleCompletion(task)}
+                  busy={busyId === task.id}
+                  disabled={Boolean(busyId)}
+                >
+                  {task.completed_at ? "Reopen" : "Complete"}
+                </AppButton>
+              </View>
+            ))
+          )}
+          {page > 0 || tasks.data?.length === 100 ? (
+            <View style={styles.choices}>
+              {page > 0 ? (
+                <AppButton
+                  variant="secondary"
+                  onPress={() => setPage(page - 1)}
+                >
+                  Previous tasks
+                </AppButton>
+              ) : null}
+              {tasks.data?.length === 100 ? (
+                <AppButton
+                  variant="secondary"
+                  onPress={() => setPage(page + 1)}
+                >
+                  More tasks
+                </AppButton>
+              ) : null}
+            </View>
+          ) : null}
+        </>
+      )}
+      {message ? (
+        <Text accessibilityRole="alert" style={{ color: colors.text }}>
+          {message}
+        </Text>
+      ) : null}
+    </AppScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  title: { fontSize: 30, fontWeight: "700" },
+  heading: { fontSize: 20, fontWeight: "700" },
+  section: { gap: spacing.md },
+  choices: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  choice: {
+    minHeight: 48,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  card: {
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+});
