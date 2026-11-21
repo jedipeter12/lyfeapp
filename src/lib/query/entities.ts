@@ -7,9 +7,11 @@ import {
 import { repositories } from "@/lib/supabase/repositories";
 import type {
   EntityCreate,
+  EntityRow,
   EntityTable,
   EntityUpdate,
 } from "@/schemas/entities";
+import type { RecurrenceRule, RecurrenceRuleInput } from "@/schemas/recurrence";
 
 function requiredRepositories() {
   if (!repositories) throw new Error("Supabase is not configured");
@@ -36,6 +38,10 @@ export const entityKeys = {
   detail: (userId: string, table: EntityTable, id: string) =>
     [...entityKeys.all(userId, table), "detail", id] as const,
   profile: (userId: string) => ["user", userId, "profile"] as const,
+  recurrenceRules: (userId: string) =>
+    ["user", userId, "recurrence-rules"] as const,
+  occurrenceHistory: (userId: string, taskId: string, page: number) =>
+    ["user", userId, "task-occurrences", taskId, page] as const,
 };
 
 export function invalidateEntityQueries(
@@ -98,6 +104,84 @@ export function useTasksByCompletion(
     queryFn: () =>
       requiredRepositories().listTasksByCompletion(userId!, completion, page),
     enabled: Boolean(userId && repositories),
+  });
+}
+
+export function useTaskRecurrenceRules(
+  userId?: string,
+  taskIds: string[] = [],
+) {
+  return useQuery({
+    queryKey: [...entityKeys.recurrenceRules(userId ?? ""), ...taskIds],
+    queryFn: () =>
+      requiredRepositories().listTaskRecurrenceRules(userId!, taskIds),
+    enabled: Boolean(userId && repositories && taskIds.length),
+  });
+}
+
+export function useTaskOccurrenceHistory(
+  userId?: string,
+  taskId?: string,
+  page = 0,
+) {
+  return useQuery({
+    queryKey: entityKeys.occurrenceHistory(userId ?? "", taskId ?? "", page),
+    queryFn: () =>
+      requiredRepositories().listTaskOccurrences(userId!, taskId!, page),
+    enabled: Boolean(userId && taskId && repositories),
+  });
+}
+
+export function useSaveTaskRecurrenceRule(userId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      task,
+      existing,
+      lastCompletedDate,
+      input,
+    }: {
+      task: EntityRow<"tasks">;
+      existing: RecurrenceRule | null;
+      lastCompletedDate: string | null;
+      input: RecurrenceRuleInput;
+    }) =>
+      requiredRepositories().saveTaskRecurrenceRule(
+        userId,
+        task,
+        existing,
+        lastCompletedDate,
+        input,
+      ),
+    onSuccess: async () => {
+      await Promise.all([
+        invalidateEntityQueries(client, userId, "tasks"),
+        client.invalidateQueries({
+          queryKey: entityKeys.recurrenceRules(userId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useCompleteRecurringTask(userId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      task,
+      rule,
+    }: {
+      task: EntityRow<"tasks">;
+      rule: RecurrenceRule;
+    }) => requiredRepositories().completeRecurringTask(userId, task, rule),
+    onSuccess: async (_, { task }) => {
+      await Promise.all([
+        invalidateEntityQueries(client, userId, "tasks"),
+        client.invalidateQueries({
+          queryKey: ["user", userId, "task-occurrences", task.id],
+        }),
+      ]);
+    },
   });
 }
 
