@@ -23,6 +23,19 @@ import {
   type Profile,
 } from "@/schemas/entities";
 import { supabase } from "./client";
+import {
+  localDateAt,
+  localTimeAt,
+  nextOccurrence,
+} from "@/features/tasks/recurrence";
+import {
+  recurrenceRuleInput,
+  recurrenceRuleRow,
+  taskOccurrenceRow,
+  type RecurrenceRule,
+  type RecurrenceRuleInput,
+  type TaskOccurrence,
+} from "@/schemas/recurrence";
 
 export class OfflineWriteError extends Error {
   constructor() {
@@ -147,6 +160,130 @@ export function createRepositories(
       return (data ?? []).map((value) =>
         parseOwned(entitySchemas.tasks.row, value, userId),
       ) as EntityRow<"tasks">[];
+    },
+
+    async listTaskRecurrenceRules(
+      userId: string,
+      taskIds: string[],
+    ): Promise<RecurrenceRule[]> {
+      z.uuid().parse(userId);
+      if (!taskIds.length) return [];
+      taskIds.forEach((id) => z.uuid().parse(id));
+      const { data, error } = await client
+        .from("recurrence_rules")
+        .select("*")
+        .eq("user_id", userId)
+        .in("task_id", taskIds);
+      if (error) throw error;
+      return (data ?? []).map(
+        (value) =>
+          parseOwned(recurrenceRuleRow, value, userId) as RecurrenceRule,
+      );
+    },
+
+    async listTaskOccurrences(
+      userId: string,
+      taskId: string,
+      page = 0,
+    ): Promise<TaskOccurrence[]> {
+      z.uuid().parse(userId);
+      z.uuid().parse(taskId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      const start = page * 100;
+      const { data, error } = await client
+        .from("task_occurrences")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("task_id", taskId)
+        .order("scheduled_local_date", { ascending: false })
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map(
+        (value) =>
+          parseOwned(taskOccurrenceRow, value, userId) as TaskOccurrence,
+      );
+    },
+
+    async saveTaskRecurrenceRule(
+      userId: string,
+      task: EntityRow<"tasks">,
+      existing: RecurrenceRule | null,
+      lastCompletedDate: string | null,
+      input: RecurrenceRuleInput,
+    ): Promise<RecurrenceRule> {
+      z.uuid().parse(userId);
+      if (
+        task.user_id !== userId ||
+        (existing &&
+          (existing.user_id !== userId || existing.task_id !== task.id))
+      )
+        throw new Error("Unexpected record owner");
+      if (!task.due_at)
+        throw new Error("Set a due date before repeating a task.");
+      const payload = recurrenceRuleInput.parse(input);
+      const rule = {
+        ...payload,
+        anchor_local_date:
+          existing?.anchor_local_date ??
+          localDateAt(task.due_at, payload.timezone),
+        anchor_local_time:
+          existing?.anchor_local_time ??
+          localTimeAt(task.due_at, payload.timezone),
+      };
+      const next = nextOccurrence(rule, lastCompletedDate);
+      if (!next) throw new Error("The end date leaves no next occurrence.");
+      await assertOnline();
+      const { data, error } = await client
+        .rpc("save_recurrence_rule", {
+          p_task_id: task.id,
+          p_frequency: payload.frequency,
+          p_interval: payload.interval,
+          p_weekdays: payload.weekdays,
+          p_timezone: payload.timezone,
+          p_end_at: payload.end_at,
+          p_next_at: next.at,
+        })
+        .single();
+      if (error) throw error;
+      return parseOwned(recurrenceRuleRow, data, userId) as RecurrenceRule;
+    },
+
+    async completeRecurringTask(
+      userId: string,
+      task: EntityRow<"tasks">,
+      rule: RecurrenceRule,
+    ): Promise<{ task: EntityRow<"tasks">; occurrence: TaskOccurrence }> {
+      z.uuid().parse(userId);
+      if (
+        task.user_id !== userId ||
+        rule.user_id !== userId ||
+        rule.task_id !== task.id
+      )
+        throw new Error("Unexpected record owner");
+      if (!task.due_at) throw new Error("No recurring occurrence is due.");
+      const localDate = localDateAt(task.due_at, rule.timezone);
+      const next = nextOccurrence(rule, localDate);
+      await assertOnline();
+      const { data, error } = await client.rpc("complete_task_occurrence", {
+        p_task_id: task.id,
+        p_scheduled_local_date: localDate,
+        p_scheduled_at: task.due_at,
+        p_next_at: next?.at ?? null,
+      });
+      if (error) throw error;
+      const result = z
+        .object({
+          task: entitySchemas.tasks.row,
+          occurrence: taskOccurrenceRow,
+        })
+        .parse(data);
+      if (
+        result.task.user_id !== userId ||
+        result.occurrence.user_id !== userId
+      )
+        throw new Error("Unexpected record owner");
+      return result;
     },
 
     async get<T extends EntityTable>(

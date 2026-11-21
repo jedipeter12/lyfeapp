@@ -6,7 +6,7 @@ Every table contains an owner `user_id`. App roles can select, insert, and updat
 
 The migration enforces positive finite pet weights, nonnegative finite cost, nonnegative mileage, odometer, and attachment size, supported recurrence frequencies and weekdays, valid module and custom field types, and shape and type checks for custom field values. VINs are uppercased and whitespace removed before enforcing per user uniqueness. Text task status, priority, and reminder status remain nonempty but open vocabularies until feature behavior is specified. This migration does not add an occurrence table or completion history; the later ADR-003 settles that extension.
 
-[ADR-003](decisions/ADR-003-recurrence-occurrence-persistence.md) approves the L—13 occurrence persistence extension. It has not been migrated; the 16-table baseline remains the implemented model.
+[ADR-003](decisions/ADR-003-recurrence-occurrence-persistence.md) approves the L—13 occurrence persistence extension. Migration `20261120222601_l13_recurrence_occurrences` adds a seventeenth owner-scoped `task_occurrences` table, immutable local rule anchors, one rule per task, and narrow transactional RPCs for rule saves and occurrence completion. The migration passed in a disposable local PostgreSQL container but has not been applied to the hosted development project. Until then, that project still has the 16-table model and cannot use the recurrence UI.
 
 ## Approved MVP delete behavior
 

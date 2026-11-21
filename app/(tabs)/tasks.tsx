@@ -9,19 +9,34 @@ import {
   useEntity,
   useEntityList,
   useTasksByCompletion,
+  useTaskRecurrenceRules,
+  useTaskOccurrenceHistory,
+  useSaveTaskRecurrenceRule,
+  useCompleteRecurringTask,
   useUpdateEntity,
 } from "@/lib/query/entities";
 import { useAuth } from "@/lib/supabase/AuthProvider";
 import { OfflineWriteError } from "@/lib/supabase/repositories";
 import type { EntityRow } from "@/schemas/entities";
+import type { RecurrenceRule } from "@/schemas/recurrence";
 import { spacing, radius, useAppTheme } from "@/theme";
 import {
   initialTaskDraft,
   taskInputFromDraft,
   type TaskDraft,
 } from "@/features/tasks/taskForm";
+import { resolveLocalTime, type Frequency } from "@/features/tasks/recurrence";
+import { localDateAt } from "@/features/tasks/recurrence";
 
 type Completion = "all" | "pending" | "completed";
+type RepeatDraft = {
+  frequency: Frequency;
+  interval: string;
+  weekdays: number[];
+  timezone: string;
+  endDate: string;
+};
+const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function TasksScreen() {
   const { session } = useAuth();
@@ -33,9 +48,25 @@ export default function TasksScreen() {
   const [vehiclePage, setVehiclePage] = useState(0);
   const [draft, setDraft] = useState<TaskDraft | null>(null);
   const [editing, setEditing] = useState<EntityRow<"tasks"> | null>(null);
+  const [repeatTask, setRepeatTask] = useState<EntityRow<"tasks"> | null>(null);
+  const [repeatDraft, setRepeatDraft] = useState<RepeatDraft | null>(null);
+  const [historyTask, setHistoryTask] = useState<EntityRow<"tasks"> | null>(
+    null,
+  );
+  const [historyPage, setHistoryPage] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const tasks = useTasksByCompletion(userId, filter, page);
+  const rules = useTaskRecurrenceRules(
+    userId,
+    tasks.data?.map((task) => task.id) ?? [],
+  );
+  const selectedTask = repeatTask ?? historyTask;
+  const occurrences = useTaskOccurrenceHistory(
+    userId,
+    selectedTask?.id,
+    historyPage,
+  );
   const pets = useEntityList("pets", userId, petPage);
   const vehicles = useEntityList("vehicles", userId, vehiclePage);
   const linkedPet = useEntity("pets", userId, draft?.petId ?? undefined);
@@ -46,6 +77,12 @@ export default function TasksScreen() {
   );
   const createTask = useCreateEntity("tasks", userId);
   const updateTask = useUpdateEntity("tasks", userId);
+  const saveRule = useSaveTaskRecurrenceRule(userId);
+  const completeRecurring = useCompleteRecurringTask(userId);
+
+  function ruleFor(taskId: string) {
+    return rules.data?.find((rule) => rule.task_id === taskId) ?? null;
+  }
 
   function editTask(task?: EntityRow<"tasks">) {
     setEditing(task ?? null);
@@ -69,7 +106,12 @@ export default function TasksScreen() {
     try {
       if (editing) {
         const { status: _status, ...changes } = input;
-        await updateTask.mutateAsync({ id: editing.id, changes });
+        if (ruleFor(editing.id)) {
+          const { due_at: _due, ...withoutDue } = changes;
+          await updateTask.mutateAsync({ id: editing.id, changes: withoutDue });
+        } else {
+          await updateTask.mutateAsync({ id: editing.id, changes });
+        }
       } else {
         await createTask.mutateAsync(input);
       }
@@ -88,11 +130,19 @@ export default function TasksScreen() {
     }
   }
 
-  async function toggleCompletion(task: EntityRow<"tasks">) {
+  async function toggleCompletion(
+    task: EntityRow<"tasks">,
+    rule: RecurrenceRule | null,
+  ) {
     if (busyId) return;
     setBusyId(task.id);
     setMessage("");
     try {
+      if (rule) {
+        await completeRecurring.mutateAsync({ task, rule });
+        setMessage("Occurrence completed.");
+        return;
+      }
       const completed = Boolean(task.completed_at);
       await updateTask.mutateAsync({
         id: task.id,
@@ -107,6 +157,67 @@ export default function TasksScreen() {
         error instanceof OfflineWriteError
           ? error.message
           : "Could not update task. Try again.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function openRepeat(task: EntityRow<"tasks">) {
+    const rule = ruleFor(task.id);
+    setRepeatTask(task);
+    setRepeatDraft({
+      frequency: rule?.frequency ?? "daily",
+      interval: String(rule?.interval ?? 1),
+      weekdays: rule?.weekdays ?? [],
+      timezone:
+        rule?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      endDate: rule?.end_at ? localDateAt(rule.end_at, rule.timezone) : "",
+    });
+    setHistoryPage(0);
+    setMessage("");
+  }
+
+  async function saveRepeat() {
+    if (!repeatTask || !repeatDraft || busyId) return;
+    const interval = Number(repeatDraft.interval);
+    if (!Number.isSafeInteger(interval) || interval < 1) {
+      setMessage("Enter a positive whole-number interval.");
+      return;
+    }
+    setBusyId("repeat");
+    setMessage("");
+    try {
+      const end_at = repeatDraft.endDate.trim()
+        ? resolveLocalTime(
+            repeatDraft.endDate.trim(),
+            "23:59",
+            repeatDraft.timezone,
+          )
+        : null;
+      await saveRule.mutateAsync({
+        task: repeatTask,
+        existing: ruleFor(repeatTask.id),
+        lastCompletedDate: occurrences.data?.[0]?.scheduled_local_date ?? null,
+        input: {
+          frequency: repeatDraft.frequency,
+          interval,
+          weekdays:
+            repeatDraft.frequency === "weekly" && repeatDraft.weekdays.length
+              ? repeatDraft.weekdays
+              : null,
+          timezone: repeatDraft.timezone.trim(),
+          end_at,
+        },
+      });
+      setRepeatTask(null);
+      setRepeatDraft(null);
+      setMessage("Repeat schedule saved.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not save repeat schedule.",
       );
     } finally {
       setBusyId(null);
@@ -176,14 +287,21 @@ export default function TasksScreen() {
               ),
             )}
           </View>
-          <AppTextField
-            label="Due date (YYYY-MM-DD, optional)"
-            value={draft.dueDate}
-            placeholder="2027-05-01"
-            keyboardType="numbers-and-punctuation"
-            onChangeText={(dueDate) => setDraft({ ...draft, dueDate })}
-          />
-          {draft.dueDate ? (
+          {editing && ruleFor(editing.id) ? (
+            <Text style={{ color: colors.muted }}>
+              The due date follows the repeat schedule. Edit repeat settings
+              from the task list.
+            </Text>
+          ) : (
+            <AppTextField
+              label="Due date (YYYY-MM-DD, optional)"
+              value={draft.dueDate}
+              placeholder="2027-05-01"
+              keyboardType="numbers-and-punctuation"
+              onChangeText={(dueDate) => setDraft({ ...draft, dueDate })}
+            />
+          )}
+          {draft.dueDate && !(editing && ruleFor(editing.id)) ? (
             <AppTextField
               label="Due time (HH:mm, device time zone)"
               value={draft.dueTime}
@@ -304,6 +422,11 @@ export default function TasksScreen() {
           <AppButton onPress={() => void save()} busy={busyId === "save"}>
             Save task
           </AppButton>
+          {!editing ? (
+            <Text style={{ color: colors.muted }}>
+              Save this task, then choose Add repeat to set a schedule.
+            </Text>
+          ) : null}
           <AppButton
             variant="secondary"
             onPress={() => {
@@ -313,6 +436,148 @@ export default function TasksScreen() {
             }}
           >
             Cancel
+          </AppButton>
+        </View>
+      ) : repeatTask && repeatDraft ? (
+        <View style={styles.section}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.heading, { color: colors.text }]}
+          >
+            Repeat: {repeatTask.title}
+          </Text>
+          <Text style={{ color: colors.text }}>Frequency</Text>
+          <View style={styles.choices}>
+            {(["daily", "weekly", "monthly", "yearly"] as const).map(
+              (frequency) =>
+                choice(frequency, repeatDraft.frequency === frequency, () =>
+                  setRepeatDraft({ ...repeatDraft, frequency }),
+                ),
+            )}
+          </View>
+          <AppTextField
+            label="Every (interval)"
+            value={repeatDraft.interval}
+            keyboardType="number-pad"
+            onChangeText={(interval) =>
+              setRepeatDraft({ ...repeatDraft, interval })
+            }
+          />
+          {repeatDraft.frequency === "weekly" ? (
+            <>
+              <Text style={{ color: colors.text }}>
+                Days (leave empty for the due weekday)
+              </Text>
+              <View style={styles.choices}>
+                {weekdayNames.map((name, day) =>
+                  choice(
+                    name,
+                    repeatDraft.weekdays.includes(day),
+                    () =>
+                      setRepeatDraft({
+                        ...repeatDraft,
+                        weekdays: repeatDraft.weekdays.includes(day)
+                          ? repeatDraft.weekdays.filter(
+                              (value) => value !== day,
+                            )
+                          : [...repeatDraft.weekdays, day].sort(),
+                      }),
+                    name,
+                  ),
+                )}
+              </View>
+            </>
+          ) : null}
+          <AppTextField
+            label="Time zone (IANA)"
+            value={repeatDraft.timezone}
+            onChangeText={(timezone) =>
+              setRepeatDraft({ ...repeatDraft, timezone })
+            }
+          />
+          <AppTextField
+            label="End date (YYYY-MM-DD, optional)"
+            value={repeatDraft.endDate}
+            keyboardType="numbers-and-punctuation"
+            onChangeText={(endDate) =>
+              setRepeatDraft({ ...repeatDraft, endDate })
+            }
+          />
+          <AppButton
+            onPress={() => void saveRepeat()}
+            busy={busyId === "repeat"}
+            disabled={occurrences.isPending || occurrences.isError}
+          >
+            Save repeat
+          </AppButton>
+          {occurrences.isError ? (
+            <FeedbackState
+              kind="error"
+              title="Could not load completion history"
+              actionLabel="Retry"
+              onAction={() => void occurrences.refetch()}
+            />
+          ) : null}
+          <AppButton
+            variant="secondary"
+            onPress={() => {
+              setRepeatTask(null);
+              setRepeatDraft(null);
+              setMessage("");
+            }}
+          >
+            Cancel
+          </AppButton>
+        </View>
+      ) : historyTask ? (
+        <View style={styles.section}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.heading, { color: colors.text }]}
+          >
+            History: {historyTask.title}
+          </Text>
+          {occurrences.isPending ? (
+            <FeedbackState kind="loading" title="Loading history…" />
+          ) : occurrences.isError ? (
+            <FeedbackState
+              kind="error"
+              title="Could not load history"
+              actionLabel="Retry"
+              onAction={() => void occurrences.refetch()}
+            />
+          ) : occurrences.data?.length ? (
+            <>
+              {occurrences.data.map((item) => (
+                <Text key={item.id} style={{ color: colors.text }}>
+                  {item.scheduled_local_date} · Completed{" "}
+                  {new Date(item.completed_at).toLocaleString()}
+                </Text>
+              ))}
+              <View style={styles.choices}>
+                {historyPage > 0 ? (
+                  <AppButton
+                    variant="secondary"
+                    onPress={() => setHistoryPage(historyPage - 1)}
+                  >
+                    Newer history
+                  </AppButton>
+                ) : null}
+                {occurrences.data.length === 100 ? (
+                  <AppButton
+                    variant="secondary"
+                    onPress={() => setHistoryPage(historyPage + 1)}
+                  >
+                    Older history
+                  </AppButton>
+                ) : null}
+              </View>
+            </>
+          ) : (
+            <FeedbackState kind="empty" title="No completed occurrences" />
+          )}
+          <AppButton variant="secondary" onPress={() => setHistoryTask(null)}>
+            Back to tasks
           </AppButton>
         </View>
       ) : (
@@ -382,19 +647,61 @@ export default function TasksScreen() {
                     )?.model ?? "Vehicle"}
                   </Text>
                 ) : null}
-                <AppButton variant="secondary" onPress={() => editTask(task)}>
+                <AppButton
+                  variant="secondary"
+                  onPress={() => editTask(task)}
+                  disabled={rules.isPending || rules.isError}
+                >
                   Edit
                 </AppButton>
-                <AppButton
-                  onPress={() => void toggleCompletion(task)}
-                  busy={busyId === task.id}
-                  disabled={Boolean(busyId)}
-                >
-                  {task.completed_at ? "Reopen" : "Complete"}
-                </AppButton>
+                {task.due_at && !task.completed_at ? (
+                  <AppButton
+                    variant="secondary"
+                    onPress={() => openRepeat(task)}
+                    disabled={rules.isPending || rules.isError}
+                  >
+                    {ruleFor(task.id) ? "Edit repeat" : "Add repeat"}
+                  </AppButton>
+                ) : null}
+                {ruleFor(task.id) ? (
+                  <AppButton
+                    variant="secondary"
+                    onPress={() => {
+                      setHistoryPage(0);
+                      setHistoryTask(task);
+                    }}
+                  >
+                    History
+                  </AppButton>
+                ) : null}
+                {!(ruleFor(task.id) && task.completed_at) ? (
+                  <AppButton
+                    onPress={() =>
+                      void toggleCompletion(task, ruleFor(task.id))
+                    }
+                    busy={busyId === task.id}
+                    disabled={
+                      Boolean(busyId) || rules.isPending || rules.isError
+                    }
+                  >
+                    {ruleFor(task.id)
+                      ? "Complete occurrence"
+                      : task.completed_at
+                        ? "Reopen"
+                        : "Complete"}
+                  </AppButton>
+                ) : null}
               </View>
             ))
           )}
+          {rules.isError ? (
+            <FeedbackState
+              kind="error"
+              title="Could not load repeat schedules"
+              actionLabel="Retry"
+              onAction={() => void rules.refetch()}
+            />
+          ) : null}
           {page > 0 || tasks.data?.length === 100 ? (
             <View style={styles.choices}>
               {page > 0 ? (
