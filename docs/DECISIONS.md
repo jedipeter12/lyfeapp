@@ -28,7 +28,7 @@ Ticket L—5 implements the approved Supabase Auth choice and introduces `profil
 
 ## Proposed L—17 vehicle deletion decision
 
-[ADR-005](decisions/ADR-005-vehicle-deletion-proposal.md) records the conflict between L—17's CRUD wording and the accepted L—6 restriction on individual vehicle deletion. It is a proposal only; no vehicle deletion or archive behavior is approved.
+[ADR-006](decisions/ADR-006-vehicle-deletion-proposal.md) records the conflict between L—17's CRUD wording and the accepted L—6 restriction on individual vehicle deletion. It is a proposal only; no vehicle deletion or archive behavior is approved.
 
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 

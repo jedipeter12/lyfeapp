@@ -1,4 +1,4 @@
-# ADR-005 proposal: vehicle deletion
+# ADR-006 proposal: vehicle deletion
 
 **Status:** Proposed for owner decision, 2026-11-24. No deletion behavior is implemented.
 
