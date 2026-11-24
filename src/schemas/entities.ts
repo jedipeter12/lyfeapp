@@ -79,6 +79,20 @@ export const petCreate = z.object({
 });
 export const petUpdate = petCreate.partial();
 
+export const petWeightRow = z.object({
+  id,
+  user_id: id,
+  pet_id: id,
+  weight_kg: z.number().finite().positive(),
+  measured_at: timestamp,
+});
+export const petWeightCreate = petWeightRow.pick({
+  weight_kg: true,
+  measured_at: true,
+});
+export const petWeightUpdate = petWeightCreate.partial();
+export type PetWeightEntry = z.infer<typeof petWeightRow>;
+
 export const vehicleRow = z.object({
   id,
   user_id: id,

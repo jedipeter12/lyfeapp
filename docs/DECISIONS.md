@@ -22,6 +22,10 @@ Ticket L—5 implements the approved Supabase Auth choice and introduces `profil
 
 [ADR-001](decisions/ADR-001-task-soft-delete.md) was accepted by the owner on 2026-11-18. It adds a reversible `tasks.deleted_at` marker so tasks can be hidden from default MVP views. The L—6 restriction still governs physical deletion and all other entity types. The additive migration and repository filtering and mark/restore methods are merged; the migration was applied to the Lyfe development project on 2026-11-18. Task UI and notification behavior must be integrated before exposing this feature.
 
+## Proposed L—15 decision: individual pet deletion
+
+Ticket L—15's pet CRUD wording conflicts with the accepted L—6 pet deletion restriction. [ADR-005](decisions/ADR-005-pet-deletion-proposal.md) proposes options for owner decision; it is not accepted. L—15 implements pet creation, reading, and editing without deletion while that decision is pending.
+
 ## Accepted L—11 decision: attachment deletion
 
 [ADR-002](decisions/ADR-002-attachment-deletion.md) was accepted by the owner on 2026-11-19. It makes a narrow exception to the L—6 restriction for owner deletion of attachment metadata and private Storage objects. It does not grant physical deletion of tasks, pets, vehicles, or their other child records. The L—11 migration and client code remain subject to review, merge, and deployment controls.
