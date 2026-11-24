@@ -45,6 +45,8 @@ export const entityKeys = {
     ["user", userId, "recurrence-rules"] as const,
   occurrenceHistory: (userId: string, taskId: string, page: number) =>
     ["user", userId, "task-occurrences", taskId, page] as const,
+  vehicleMileage: (userId: string, vehicleId: string, page: number) =>
+    ["user", userId, "vehicle-mileage", vehicleId, page] as const,
   petWeights: (userId: string, petId: string, page: number) =>
     ["user", userId, "pet-weights", petId, page] as const,
 };
@@ -199,6 +201,42 @@ export function useEntity<T extends EntityTable>(
     queryKey: entityKeys.detail(userId ?? "", table, id ?? ""),
     queryFn: () => requiredRepositories().get(table, userId!, id!),
     enabled: Boolean(userId && id && repositories),
+  });
+}
+
+export function useVehicleMileage(
+  userId?: string,
+  vehicleId?: string,
+  page = 0,
+) {
+  return useQuery({
+    queryKey: entityKeys.vehicleMileage(userId ?? "", vehicleId ?? "", page),
+    queryFn: () =>
+      requiredRepositories().listVehicleMileage(userId!, vehicleId!, page),
+    enabled: Boolean(userId && vehicleId && repositories),
+  });
+}
+
+export function useAddVehicleMileage(userId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      vehicleId,
+      odometer,
+      recorded_at,
+    }: {
+      vehicleId: string;
+      odometer: number;
+      recorded_at: string;
+    }) =>
+      requiredRepositories().addVehicleMileage(userId, vehicleId, {
+        odometer,
+        recorded_at,
+      }),
+    onSuccess: (_, { vehicleId }) =>
+      client.invalidateQueries({
+        queryKey: ["user", userId, "vehicle-mileage", vehicleId],
+      }),
   });
 }
 

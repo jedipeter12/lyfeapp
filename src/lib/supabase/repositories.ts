@@ -28,6 +28,11 @@ import {
 } from "@/schemas/entities";
 import { supabase } from "./client";
 import {
+  mileageEntryCreate,
+  mileageEntryRow,
+  type MileageEntry,
+} from "@/schemas/vehicles";
+import {
   localDateAt,
   localTimeAt,
   nextOccurrence,
@@ -305,6 +310,60 @@ export function createRepositories(
         .single();
       if (error) throw error;
       return parseOwned(entitySchemas[table].row, data, userId) as EntityRow<T>;
+    },
+
+    async listVehicleMileage(
+      userId: string,
+      vehicleId: string,
+      page = 0,
+    ): Promise<MileageEntry[]> {
+      z.uuid().parse(userId);
+      z.uuid().parse(vehicleId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      await this.get("vehicles", userId, vehicleId);
+      const start = page * 100;
+      const { data, error } = await client
+        .from("vehicle_mileage_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("vehicle_id", vehicleId)
+        .order("recorded_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) => {
+        const entry = parseOwned(
+          mileageEntryRow,
+          value,
+          userId,
+        ) as MileageEntry;
+        if (entry.vehicle_id !== vehicleId)
+          throw new Error("Unexpected vehicle link");
+        return entry;
+      });
+    },
+
+    async addVehicleMileage(
+      userId: string,
+      vehicleId: string,
+      input: z.input<typeof mileageEntryCreate>,
+    ): Promise<MileageEntry> {
+      z.uuid().parse(userId);
+      z.uuid().parse(vehicleId);
+      const payload = mileageEntryCreate.parse(input);
+      await assertOnline();
+      await this.get("vehicles", userId, vehicleId);
+      const { data, error } = await client
+        .from("vehicle_mileage_entries")
+        .insert({ ...payload, user_id: userId, vehicle_id: vehicleId })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const entry = parseOwned(mileageEntryRow, data, userId) as MileageEntry;
+      if (entry.vehicle_id !== vehicleId)
+        throw new Error("Unexpected vehicle link");
+      return entry;
     },
 
     async create<T extends EntityTable>(
