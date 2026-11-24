@@ -85,7 +85,7 @@ Run `npm test -- --runTestsByPath 'src/features/tasks/__tests__/taskForm.test.ts
 
 ## L—15 pet profiles and weight history
 
-The Pets tab supports creating, viewing, and editing pet profiles, then adding or correcting dated weight entries in kilograms. It shows owner-scoped, paged weight history newest first. Profile and weight forms validate required fields, calendar dates, and positive finite kilograms before writing. The existing baseline migration supplies pet and weight tables, owner RLS, and same-owner foreign keys; L—15 adds no migration. Pet deletion remains prohibited by the accepted L—6 policy. [ADR-005](decisions/ADR-005-pet-deletion-proposal.md) proposes how to resolve the ticket's CRUD wording.
+The Pets tab supports creating, viewing, and editing pet profiles, then adding or correcting dated weight entries in kilograms. It shows owner-scoped, paged weight history newest first. Profile and weight forms validate required fields, calendar dates, and positive finite kilograms before writing. The existing baseline migration supplies pet and weight tables, owner RLS, and same-owner foreign keys; L—15 adds no migration. Pet deletion remains prohibited for the MVP under the accepted [ADR-005](decisions/ADR-005-pet-deletion.md).
 
 Run `npm test -- --runTestsByPath 'src/features/pets/__tests__/petForm.test.ts' 'src/lib/supabase/__tests__/petWeights.test.ts' 'app/(tabs)/__tests__/pets.test.tsx'` for form, repository, and screen behavior. The existing `supabase/tests/l7_ownership_security.sql` covers owner isolation and cross-user pet weight links in a disposable database. Native device and hosted Data API flows remain to be verified before release.
 
