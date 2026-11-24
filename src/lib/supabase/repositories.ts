@@ -14,6 +14,9 @@ import {
 } from "@/schemas/customFields";
 import {
   entitySchemas,
+  petWeightCreate,
+  petWeightRow,
+  petWeightUpdate,
   profileRow,
   profileUpdate,
   type EntityCreate,
@@ -21,6 +24,7 @@ import {
   type EntityTable,
   type EntityUpdate,
   type Profile,
+  type PetWeightEntry,
 } from "@/schemas/entities";
 import { supabase } from "./client";
 import {
@@ -341,6 +345,80 @@ export function createRepositories(
         .single();
       if (error) throw error;
       return parseOwned(entitySchemas[table].row, data, userId) as EntityRow<T>;
+    },
+
+    async listPetWeights(
+      userId: string,
+      petId: string,
+      page = 0,
+    ): Promise<PetWeightEntry[]> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      const start = page * 100;
+      const { data, error } = await client
+        .from("pet_weight_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("pet_id", petId)
+        .order("measured_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) => {
+        const entry = parseOwned(petWeightRow, value, userId) as PetWeightEntry;
+        if (entry.pet_id !== petId) throw new Error("Unexpected pet reference");
+        return entry;
+      });
+    },
+
+    async addPetWeight(
+      userId: string,
+      petId: string,
+      input: z.input<typeof petWeightCreate>,
+    ): Promise<PetWeightEntry> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      const payload = petWeightCreate.parse(input);
+      await assertOnline();
+      const { data, error } = await client
+        .from("pet_weight_entries")
+        .insert({ ...payload, user_id: userId, pet_id: petId })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const entry = parseOwned(petWeightRow, data, userId) as PetWeightEntry;
+      if (entry.pet_id !== petId) throw new Error("Unexpected pet reference");
+      return entry;
+    },
+
+    async updatePetWeight(
+      userId: string,
+      petId: string,
+      entryId: string,
+      changes: z.input<typeof petWeightUpdate>,
+    ): Promise<PetWeightEntry> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      z.uuid().parse(entryId);
+      const payload = petWeightUpdate.parse(changes);
+      if (Object.keys(payload).length === 0)
+        throw new Error("No changes to save");
+      await assertOnline();
+      const { data, error } = await client
+        .from("pet_weight_entries")
+        .update(payload)
+        .eq("user_id", userId)
+        .eq("pet_id", petId)
+        .eq("id", entryId)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const entry = parseOwned(petWeightRow, data, userId) as PetWeightEntry;
+      if (entry.pet_id !== petId || entry.id !== entryId)
+        throw new Error("Unexpected pet reference");
+      return entry;
     },
 
     async markTaskDeleted(

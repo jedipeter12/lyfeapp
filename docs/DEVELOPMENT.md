@@ -27,7 +27,7 @@ python3 scripts/check_repo.py
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-Use `npm run ios` or `npm run android` to launch through Expo Go on a matching simulator or device. `npm start` starts the development server without opening a target. With the development project configured and the migration applied, create an account, confirm its email if required, sign in, edit the Account profile, restart the app to check session restoration, and sign out. Task, pet, and vehicle routes are placeholders. The recurrence prototype is still not production code. There is no deployment or release procedure.
+Use `npm run ios` or `npm run android` to launch through Expo Go on a matching simulator or device. `npm start` starts the development server without opening a target. With the development project configured and the migration applied, create an account, confirm its email if required, sign in, edit the Account profile, restart the app to check session restoration, and sign out. Tasks and Pets have feature flows; Vehicles remains a placeholder. There is no deployment or release procedure.
 
 ## Checks
 
@@ -82,6 +82,12 @@ To verify locally, create a **disposable** PostgreSQL database and apply `supaba
 The Tasks tab uses `useTasksByCompletion` for owner-scoped, 100-row server-filtered pages and the existing task mutations for create, edit, complete, and reopen. New tasks use `pending` status and low/medium/high priority. Completion writes `completed` and `completed_at` together; reopening resets both. Due date and time are interpreted in the device's local time zone and stored as UTC. The form validates calendar rollover and nonexistent local times. A task can link to either an owned pet or an owned vehicle; database foreign keys enforce ownership. Task physical deletion remains forbidden. The soft-delete controls are not exposed until notification behavior is defined. Recurrence and reminders are separate tickets.
 
 Run `npm test -- --runTestsByPath 'src/features/tasks/__tests__/taskForm.test.ts' 'src/lib/supabase/__tests__/repositories.test.ts' 'app/(tabs)/__tests__/tasks.test.tsx'` for the form, repository, and screen-flow tests. For the SQL integration test, use a **disposable** PostgreSQL database: apply `supabase/tests/l6_auth_stub.sql`, migrations `20261115210000_profiles_auth`, `20261118041954_baseline_tables`, and `20261118060031_task_soft_delete` in timestamp order, then run `supabase/tests/l12_task_flow.sql` with `psql -v ON_ERROR_STOP=1`. The SQL test rolls back its synthetic data. It covers create/edit/complete/reopen, completion filters, pet-to-vehicle relinking, and cross-owner isolation. Native UI and hosted Data API flows still need verification.
+
+## L—15 pet profiles and weight history
+
+The Pets tab supports creating, viewing, and editing pet profiles, then adding or correcting dated weight entries in kilograms. It shows owner-scoped, paged weight history newest first. New entries dated today use the current time; backdated entries use local noon because the form collects a date only. Correcting a weight without changing its date preserves the original timestamp. Profile and weight forms validate required fields, calendar dates, and positive finite kilograms before writing. The existing baseline migration supplies pet and weight tables, owner RLS, and same-owner foreign keys; L—15 adds no migration. Pet deletion remains prohibited for the MVP under the accepted [ADR-005](decisions/ADR-005-pet-deletion.md).
+
+Run `npm test -- --runTestsByPath 'src/features/pets/__tests__/petForm.test.ts' 'src/lib/supabase/__tests__/petWeights.test.ts' 'app/(tabs)/__tests__/pets.test.tsx'` for form, repository, and screen behavior. The existing `supabase/tests/l7_ownership_security.sql` covers owner isolation and cross-user pet weight links in a disposable database. Native device and hosted Data API flows remain to be verified before release.
 
 ## L—13 recurrence and occurrence history
 
