@@ -52,5 +52,13 @@ describe("pet form", () => {
         original,
       ).measured_at,
     ).toBe(original);
+    const now = new Date("2026-11-24T09:15:00.000Z");
+    expect(
+      weightInputFromDraft(
+        { weight: "4.5", measuredDate: todayLocalDate(now) },
+        undefined,
+        now,
+      ).measured_at,
+    ).toBe(now.toISOString());
   });
 });

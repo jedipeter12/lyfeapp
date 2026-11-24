@@ -16,9 +16,13 @@ export function todayLocalDate(now = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
-function validPastOrToday(value: string, label: string): string | null {
+function validPastOrToday(
+  value: string,
+  label: string,
+  today = todayLocalDate(),
+): string | null {
   if (!value) return null;
-  if (!z.iso.date().safeParse(value).success || value > todayLocalDate()) {
+  if (!z.iso.date().safeParse(value).success || value > today) {
     throw new Error(`Enter a valid ${label} on or before today (YYYY-MM-DD).`);
   }
   return value;
@@ -64,6 +68,7 @@ export function initialWeightDraft(entry?: {
 export function weightInputFromDraft(
   draft: WeightDraft,
   originalMeasuredAt?: string,
+  now = new Date(),
 ) {
   const text = draft.weight.trim();
   if (!/^(?:\d+)(?:\.\d+)?$/.test(text))
@@ -71,7 +76,12 @@ export function weightInputFromDraft(
   const weight_kg = Number(text);
   if (!Number.isFinite(weight_kg) || weight_kg <= 0)
     throw new Error("Enter a positive weight in kilograms.");
-  const date = validPastOrToday(draft.measuredDate.trim(), "measurement date");
+  const today = todayLocalDate(now);
+  const date = validPastOrToday(
+    draft.measuredDate.trim(),
+    "measurement date",
+    today,
+  );
   if (!date) throw new Error("Measurement date is required.");
   if (
     originalMeasuredAt &&
@@ -79,6 +89,7 @@ export function weightInputFromDraft(
   ) {
     return { weight_kg, measured_at: originalMeasuredAt };
   }
+  if (date === today) return { weight_kg, measured_at: now.toISOString() };
   const [year, month, day] = date.split("-").map(Number);
   const measured = new Date(0);
   measured.setFullYear(year, month - 1, day);
