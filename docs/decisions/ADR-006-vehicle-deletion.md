@@ -1,6 +1,6 @@
-# ADR-006 proposal: vehicle deletion
+# ADR-006: retain restricted vehicle deletion
 
-**Status:** Proposed for owner decision, 2026-11-24. No deletion behavior is implemented.
+**Status:** Accepted by the owner, 2026-11-24.
 
 ## Context
 
@@ -12,10 +12,10 @@ L—17 asks for vehicle CRUD. The accepted L—6 restricted individual deletion 
 2. Add reversible vehicle archiving with a new marker, filtering rules, restore UI, and explicit behavior for linked tasks and reminders. This requires a new approved migration and client work.
 3. Allow permanent owner deletion with a deliberate dependent-record policy and private-file cleanup. This changes the accepted restriction and needs an approved architecture decision before implementation.
 
-## Recommendation
+## Decision
 
-Choose option 1 for the current MVP. It preserves the accepted data retention behavior. The owner can approve a separate archive or deletion ticket when the behavior of linked records is defined.
+Keep the existing L—6 restriction for L—17 and launch. Do not add vehicle deletion or archiving in this ticket. Reconsider after launch if users request it, with a separate decision and implementation that defines the behavior of linked records and private files.
 
 ## Consequences
 
-Users can create and edit vehicle profiles and record mileage, but cannot remove a vehicle. The L—17 delete criterion remains unresolved until the owner chooses an option.
+Users can create and edit vehicle profiles and record mileage, but cannot remove a vehicle. L—17's acceptance criteria are interpreted as create, read, and update under this approved restriction. This decision does not change the account deletion requirement or approve any future vehicle deletion flow.
