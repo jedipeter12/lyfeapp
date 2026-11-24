@@ -4,7 +4,7 @@ Lyfe is an early-stage life maintenance project for remembering, scheduling, and
 
 ## Status
 
-The repository contains an Expo Router app for iOS and Android, plus product and engineering documentation. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) is the approved MVP baseline. The older repository proposals are historical where they differ from it. Tickets L—5, L—6, L—8, and L—11 and the task-only soft-deletion change are merged; their migrations are applied to the Lyfe development Supabase project. The L—12 task screen supports core task flows. L—13 recurrence implementation is under review; its migration is only tested locally and is not applied to the hosted development project. Pet and vehicle screens remain placeholders.
+The repository contains an Expo Router app for iOS and Android, plus product and engineering documentation. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) is the approved MVP baseline. The older repository proposals are historical where they differ from it. Tickets L—5, L—6, L—8, and L—11 and the task-only soft-deletion change are merged; their migrations are applied to the Lyfe development Supabase project. The L—12 task screen supports core task flows. L—13 recurrence implementation is under review; its migration is only tested locally and is not applied to the hosted development project. The pet screen remains a placeholder; L—17 vehicle profile and mileage work is under review.
 
 ## Start here
 

@@ -26,6 +26,10 @@ Ticket L—5 implements the approved Supabase Auth choice and introduces `profil
 
 [ADR-002](decisions/ADR-002-attachment-deletion.md) was accepted by the owner on 2026-11-19. It makes a narrow exception to the L—6 restriction for owner deletion of attachment metadata and private Storage objects. It does not grant physical deletion of tasks, pets, vehicles, or their other child records. The L—11 migration and client code remain subject to review, merge, and deployment controls.
 
+## Proposed L—17 vehicle deletion decision
+
+[ADR-005](decisions/ADR-005-vehicle-deletion-proposal.md) records the conflict between L—17's CRUD wording and the accepted L—6 restriction on individual vehicle deletion. It is a proposal only; no vehicle deletion or archive behavior is approved.
+
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 
 ## Historical audit record
