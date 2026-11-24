@@ -4,6 +4,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { AppScreen } from "@/components/ui/AppScreen";
 import { AppTextField } from "@/components/ui/AppTextField";
 import { FeedbackState } from "@/components/ui/FeedbackState";
+import { PetCareSection } from "@/features/pets/PetCareSection";
 import {
   initialPetDraft,
   initialWeightDraft,
@@ -316,6 +317,27 @@ export default function PetsScreen() {
               description="Add a weight in kilograms to start this pet’s history."
             />
           )}
+          <PetCareSection
+            key={`${pet.id}-health`}
+            kind="health"
+            userId={userId}
+            petId={pet.id}
+            petName={pet.name}
+          />
+          <PetCareSection
+            key={`${pet.id}-medications`}
+            kind="medications"
+            userId={userId}
+            petId={pet.id}
+            petName={pet.name}
+          />
+          <PetCareSection
+            key={`${pet.id}-vaccinations`}
+            kind="vaccinations"
+            userId={userId}
+            petId={pet.id}
+            petName={pet.name}
+          />
         </View>
       ) : (
         <View style={styles.section}>
