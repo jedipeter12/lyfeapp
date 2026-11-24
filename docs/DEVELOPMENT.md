@@ -27,7 +27,7 @@ python3 scripts/check_repo.py
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-Use `npm run ios` or `npm run android` to launch through Expo Go on a matching simulator or device. `npm start` starts the development server without opening a target. With the development project configured and the migration applied, create an account, confirm its email if required, sign in, edit the Account profile, restart the app to check session restoration, and sign out. Task, pet, and vehicle routes are placeholders. The recurrence prototype is still not production code. There is no deployment or release procedure.
+Use `npm run ios` or `npm run android` to launch through Expo Go on a matching simulator or device. `npm start` starts the development server without opening a target. With the development project configured and the migration applied, create an account, confirm its email if required, sign in, edit the Account profile, restart the app to check session restoration, and sign out. Tasks and Pets have feature flows; Vehicles remains a placeholder. There is no deployment or release procedure.
 
 ## Checks
 
