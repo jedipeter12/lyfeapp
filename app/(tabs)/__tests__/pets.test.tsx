@@ -19,6 +19,9 @@ const mockCreate = jest.fn();
 const mockUpdate = jest.fn();
 const mockAddWeight = jest.fn();
 const mockUpdateWeight = jest.fn();
+const mockCare = jest.fn();
+const mockSaveCare = jest.fn();
+const mockCreateTask = jest.fn();
 
 jest.mock("@/lib/supabase/AuthProvider", () => ({
   useAuth: () => ({ session: { user: { id: userId } } }),
@@ -26,7 +29,11 @@ jest.mock("@/lib/supabase/AuthProvider", () => ({
 jest.mock("@/lib/query/entities", () => ({
   useEntityList: (...args: unknown[]) => mockList(...args),
   usePetWeights: (...args: unknown[]) => mockWeights(...args),
-  useCreateEntity: () => ({ mutateAsync: mockCreate }),
+  usePetCare: (...args: unknown[]) => mockCare(...args),
+  useSavePetCare: () => ({ mutateAsync: mockSaveCare }),
+  useCreateEntity: (table: string) => ({
+    mutateAsync: table === "tasks" ? mockCreateTask : mockCreate,
+  }),
   useUpdateEntity: () => ({ mutateAsync: mockUpdate }),
   useAddPetWeight: () => ({ mutateAsync: mockAddWeight }),
   useUpdatePetWeight: () => ({ mutateAsync: mockUpdateWeight }),
@@ -35,6 +42,9 @@ jest.mock("@/lib/query/entities", () => ({
 beforeEach(() => {
   mockList.mockReset().mockReturnValue({ data: [] });
   mockWeights.mockReset().mockReturnValue({ data: [] });
+  mockCare.mockReset().mockReturnValue({ data: [] });
+  mockSaveCare.mockReset().mockResolvedValue({});
+  mockCreateTask.mockReset().mockResolvedValue({});
   mockCreate.mockReset().mockResolvedValue(pet);
   mockUpdate.mockReset().mockResolvedValue(pet);
   mockAddWeight.mockReset().mockResolvedValue({});
@@ -112,6 +122,116 @@ it("shows weight history and corrects an existing entry", async () => {
     expect(mockUpdateWeight).toHaveBeenCalledWith({
       id: entry.id,
       changes: expect.objectContaining({ weight_kg: 4.5 }),
+    }),
+  );
+});
+
+it("records health history and creates a pet-linked vaccination due task", async () => {
+  mockList.mockReturnValue({ data: [pet] });
+  mockCare.mockImplementation((kind: string) => ({
+    data:
+      kind === "vaccinations"
+        ? [
+            {
+              id: "55555555-5555-4555-8555-555555555555",
+              user_id: userId,
+              pet_id: pet.id,
+              name: "Rabies",
+              administered_on: "2026-11-01",
+              due_on: "2027-11-01",
+            },
+          ]
+        : [],
+  }));
+  const screen = await render(<PetsScreen />);
+  await fireEvent.press(screen.getByRole("button", { name: "Milo · cat" }));
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Add health event" }),
+  );
+  await fireEvent.changeText(screen.getByLabelText("Event type"), "Checkup");
+  await fireEvent.changeText(
+    screen.getByLabelText("Event date (YYYY-MM-DD)"),
+    "2026-11-01",
+  );
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Save health event" }),
+  );
+  await waitFor(() =>
+    expect(mockSaveCare).toHaveBeenCalledWith({
+      id: undefined,
+      input: expect.objectContaining({ event_type: "Checkup" }),
+    }),
+  );
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Create due task for Rabies" }),
+  );
+  await waitFor(() =>
+    expect(mockCreateTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Milo: Rabies vaccination",
+        pet_id: pet.id,
+        due_at: expect.any(String),
+      }),
+    ),
+  );
+});
+
+it("edits medication history and adds a vaccination", async () => {
+  mockList.mockReturnValue({ data: [pet] });
+  mockCare.mockImplementation((kind: string) => ({
+    data:
+      kind === "medications"
+        ? [
+            {
+              id: "66666666-6666-4666-8666-666666666666",
+              user_id: userId,
+              pet_id: pet.id,
+              name: "Example medicine",
+              dosage_text: "1 tablet",
+              start_date: "2026-11-01",
+              end_date: "2026-11-30",
+            },
+          ]
+        : [],
+  }));
+  const screen = await render(<PetsScreen />);
+  await fireEvent.press(screen.getByRole("button", { name: "Milo · cat" }));
+  await fireEvent.press(
+    screen.getByRole("button", {
+      name: "Edit Example medicine medication",
+    }),
+  );
+  await fireEvent.changeText(
+    screen.getByLabelText("Dosage (optional)"),
+    "2 tablets",
+  );
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Save medication" }),
+  );
+  await waitFor(() =>
+    expect(mockSaveCare).toHaveBeenCalledWith({
+      id: "66666666-6666-4666-8666-666666666666",
+      input: expect.objectContaining({ dosage_text: "2 tablets" }),
+    }),
+  );
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Add vaccination" }),
+  );
+  await fireEvent.changeText(
+    screen.getByLabelText("Vaccination name"),
+    "Rabies",
+  );
+  await fireEvent.changeText(
+    screen.getByLabelText("Next due date (YYYY-MM-DD, optional)"),
+    "2027-11-01",
+  );
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Save vaccination" }),
+  );
+  await waitFor(() =>
+    expect(mockSaveCare).toHaveBeenCalledWith({
+      id: undefined,
+      input: expect.objectContaining({ name: "Rabies", due_on: "2027-11-01" }),
     }),
   );
 });

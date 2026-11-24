@@ -28,6 +28,12 @@ import {
 } from "@/schemas/entities";
 import { supabase } from "./client";
 import {
+  petCareSchemas,
+  type PetCareInput,
+  type PetCareKind,
+  type PetCareRow,
+} from "@/schemas/petCare";
+import {
   mileageEntryCreate,
   mileageEntryRow,
   type MileageEntry,
@@ -478,6 +484,84 @@ export function createRepositories(
       if (entry.pet_id !== petId || entry.id !== entryId)
         throw new Error("Unexpected pet reference");
       return entry;
+    },
+
+    async listPetCare<K extends PetCareKind>(
+      kind: K,
+      userId: string,
+      petId: string,
+      page = 0,
+    ): Promise<PetCareRow<K>[]> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      const schema = petCareSchemas[kind];
+      const start = page * 100;
+      const { data, error } = await client
+        .from(schema.table)
+        .select("*")
+        .eq("user_id", userId)
+        .eq("pet_id", petId)
+        .order(schema.order, { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) => {
+        const row = parseOwned(schema.row, value, userId) as PetCareRow<K>;
+        if (row.pet_id !== petId) throw new Error("Unexpected pet reference");
+        return row;
+      });
+    },
+
+    async addPetCare<K extends PetCareKind>(
+      kind: K,
+      userId: string,
+      petId: string,
+      input: PetCareInput<K>,
+    ): Promise<PetCareRow<K>> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      const schema = petCareSchemas[kind];
+      const payload = schema.input.parse(input);
+      await assertOnline();
+      const { data, error } = await client
+        .from(schema.table)
+        .insert({ ...payload, user_id: userId, pet_id: petId })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const row = parseOwned(schema.row, data, userId) as PetCareRow<K>;
+      if (row.pet_id !== petId) throw new Error("Unexpected pet reference");
+      return row;
+    },
+
+    async updatePetCare<K extends PetCareKind>(
+      kind: K,
+      userId: string,
+      petId: string,
+      entryId: string,
+      changes: PetCareInput<K>,
+    ): Promise<PetCareRow<K>> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      z.uuid().parse(entryId);
+      const schema = petCareSchemas[kind];
+      const payload = schema.input.parse(changes);
+      await assertOnline();
+      const { data, error } = await client
+        .from(schema.table)
+        .update(payload)
+        .eq("user_id", userId)
+        .eq("pet_id", petId)
+        .eq("id", entryId)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const row = parseOwned(schema.row, data, userId) as PetCareRow<K>;
+      if (row.pet_id !== petId || row.id !== entryId)
+        throw new Error("Unexpected pet reference");
+      return row;
     },
 
     async markTaskDeleted(

@@ -15,6 +15,7 @@ import type {
 } from "@/schemas/entities";
 import type { RecurrenceRule, RecurrenceRuleInput } from "@/schemas/recurrence";
 import type { z } from "zod";
+import type { PetCareInput, PetCareKind } from "@/schemas/petCare";
 
 function requiredRepositories() {
   if (!repositories) throw new Error("Supabase is not configured");
@@ -49,6 +50,8 @@ export const entityKeys = {
     ["user", userId, "vehicle-mileage", vehicleId, page] as const,
   petWeights: (userId: string, petId: string, page: number) =>
     ["user", userId, "pet-weights", petId, page] as const,
+  petCare: (userId: string, petId: string, kind: PetCareKind, page: number) =>
+    ["user", userId, "pet-care", petId, kind, page] as const,
 };
 
 export function invalidateEntityQueries(
@@ -273,6 +276,38 @@ export function useUpdatePetWeight(userId: string, petId: string) {
     onSuccess: () =>
       client.invalidateQueries({
         queryKey: ["user", userId, "pet-weights", petId],
+      }),
+  });
+}
+
+export function usePetCare<K extends PetCareKind>(
+  kind: K,
+  userId?: string,
+  petId?: string,
+  page = 0,
+) {
+  return useQuery({
+    queryKey: entityKeys.petCare(userId ?? "", petId ?? "", kind, page),
+    queryFn: () =>
+      requiredRepositories().listPetCare(kind, userId!, petId!, page),
+    enabled: Boolean(userId && petId && repositories),
+  });
+}
+
+export function useSavePetCare<K extends PetCareKind>(
+  kind: K,
+  userId: string,
+  petId: string,
+) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id?: string; input: PetCareInput<K> }) =>
+      id
+        ? requiredRepositories().updatePetCare(kind, userId, petId, id, input)
+        : requiredRepositories().addPetCare(kind, userId, petId, input),
+    onSuccess: () =>
+      client.invalidateQueries({
+        queryKey: ["user", userId, "pet-care", petId, kind],
       }),
   });
 }
