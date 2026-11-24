@@ -10,8 +10,11 @@ import type {
   EntityRow,
   EntityTable,
   EntityUpdate,
+  petWeightCreate,
+  petWeightUpdate,
 } from "@/schemas/entities";
 import type { RecurrenceRule, RecurrenceRuleInput } from "@/schemas/recurrence";
+import type { z } from "zod";
 
 function requiredRepositories() {
   if (!repositories) throw new Error("Supabase is not configured");
@@ -44,6 +47,8 @@ export const entityKeys = {
     ["user", userId, "task-occurrences", taskId, page] as const,
   vehicleMileage: (userId: string, vehicleId: string, page: number) =>
     ["user", userId, "vehicle-mileage", vehicleId, page] as const,
+  petWeights: (userId: string, petId: string, page: number) =>
+    ["user", userId, "pet-weights", petId, page] as const,
 };
 
 export function invalidateEntityQueries(
@@ -231,6 +236,43 @@ export function useAddVehicleMileage(userId: string) {
     onSuccess: (_, { vehicleId }) =>
       client.invalidateQueries({
         queryKey: ["user", userId, "vehicle-mileage", vehicleId],
+      }),
+  });
+}
+
+export function usePetWeights(userId?: string, petId?: string, page = 0) {
+  return useQuery({
+    queryKey: entityKeys.petWeights(userId ?? "", petId ?? "", page),
+    queryFn: () => requiredRepositories().listPetWeights(userId!, petId!, page),
+    enabled: Boolean(userId && petId && repositories),
+  });
+}
+
+export function useAddPetWeight(userId: string, petId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: z.input<typeof petWeightCreate>) =>
+      requiredRepositories().addPetWeight(userId, petId, input),
+    onSuccess: () =>
+      client.invalidateQueries({
+        queryKey: ["user", userId, "pet-weights", petId],
+      }),
+  });
+}
+
+export function useUpdatePetWeight(userId: string, petId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      changes,
+    }: {
+      id: string;
+      changes: z.input<typeof petWeightUpdate>;
+    }) => requiredRepositories().updatePetWeight(userId, petId, id, changes),
+    onSuccess: () =>
+      client.invalidateQueries({
+        queryKey: ["user", userId, "pet-weights", petId],
       }),
   });
 }
