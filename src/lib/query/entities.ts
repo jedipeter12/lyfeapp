@@ -48,6 +48,10 @@ export const entityKeys = {
     ["user", userId, "task-occurrences", taskId, page] as const,
   vehicleMileage: (userId: string, vehicleId: string, page: number) =>
     ["user", userId, "vehicle-mileage", vehicleId, page] as const,
+  vehicleServices: (userId: string, vehicleId: string, page: number) =>
+    ["user", userId, "vehicle-services", vehicleId, page] as const,
+  vehicleTasks: (userId: string, vehicleId: string, page: number) =>
+    ["user", userId, "vehicle-tasks", vehicleId, page] as const,
   petWeights: (userId: string, petId: string, page: number) =>
     ["user", userId, "pet-weights", petId, page] as const,
   petCare: (userId: string, petId: string, kind: PetCareKind, page: number) =>
@@ -188,6 +192,9 @@ export function useCompleteRecurringTask(userId: string) {
       await Promise.all([
         invalidateEntityQueries(client, userId, "tasks"),
         client.invalidateQueries({
+          queryKey: ["user", userId, "vehicle-tasks"],
+        }),
+        client.invalidateQueries({
           queryKey: ["user", userId, "task-occurrences", task.id],
         }),
       ]);
@@ -240,6 +247,63 @@ export function useAddVehicleMileage(userId: string) {
       client.invalidateQueries({
         queryKey: ["user", userId, "vehicle-mileage", vehicleId],
       }),
+  });
+}
+
+export function useVehicleServices(
+  userId?: string,
+  vehicleId?: string,
+  page = 0,
+) {
+  return useQuery({
+    queryKey: entityKeys.vehicleServices(userId ?? "", vehicleId ?? "", page),
+    queryFn: () =>
+      requiredRepositories().listVehicleServices(userId!, vehicleId!, page),
+    enabled: Boolean(userId && vehicleId && repositories),
+  });
+}
+
+export function useAddVehicleService(userId: string, vehicleId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      input: Parameters<
+        ReturnType<typeof requiredRepositories>["addVehicleService"]
+      >[2],
+    ) => requiredRepositories().addVehicleService(userId, vehicleId, input),
+    onSuccess: () =>
+      client.invalidateQueries({
+        queryKey: ["user", userId, "vehicle-services", vehicleId],
+      }),
+  });
+}
+
+export function useUpdateVehicleService(userId: string, vehicleId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: Parameters<
+        ReturnType<typeof requiredRepositories>["updateVehicleService"]
+      >[3];
+    }) =>
+      requiredRepositories().updateVehicleService(userId, vehicleId, id, input),
+    onSuccess: () =>
+      client.invalidateQueries({
+        queryKey: ["user", userId, "vehicle-services", vehicleId],
+      }),
+  });
+}
+
+export function useVehicleTasks(userId?: string, vehicleId?: string, page = 0) {
+  return useQuery({
+    queryKey: entityKeys.vehicleTasks(userId ?? "", vehicleId ?? "", page),
+    queryFn: () =>
+      requiredRepositories().listVehicleTasks(userId!, vehicleId!, page),
+    enabled: Boolean(userId && vehicleId && repositories),
   });
 }
 
@@ -320,7 +384,16 @@ export function useCreateEntity<T extends EntityTable>(
   return useMutation({
     mutationFn: (input: EntityCreate<T>) =>
       requiredRepositories().create(table, userId, input),
-    onSuccess: () => invalidateEntityQueries(client, userId, table),
+    onSuccess: async (created) => {
+      await invalidateEntityQueries(client, userId, table);
+      if (table === "tasks") {
+        const vehicleId = (created as EntityRow<"tasks">).vehicle_id;
+        if (vehicleId)
+          await client.invalidateQueries({
+            queryKey: ["user", userId, "vehicle-tasks", vehicleId],
+          });
+      }
+    },
   });
 }
 
@@ -332,7 +405,13 @@ export function useUpdateEntity<T extends EntityTable>(
   return useMutation({
     mutationFn: ({ id, changes }: { id: string; changes: EntityUpdate<T> }) =>
       requiredRepositories().update(table, userId, id, changes),
-    onSuccess: () => invalidateEntityQueries(client, userId, table),
+    onSuccess: async () => {
+      await invalidateEntityQueries(client, userId, table);
+      if (table === "tasks")
+        await client.invalidateQueries({
+          queryKey: ["user", userId, "vehicle-tasks"],
+        });
+    },
   });
 }
 
