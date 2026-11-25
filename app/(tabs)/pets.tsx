@@ -4,6 +4,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { AppScreen } from "@/components/ui/AppScreen";
 import { AppTextField } from "@/components/ui/AppTextField";
 import { FeedbackState } from "@/components/ui/FeedbackState";
+import { AttachmentSection } from "@/features/attachments/AttachmentSection";
 import { PetCareSection } from "@/features/pets/PetCareSection";
 import {
   initialPetDraft,
@@ -210,6 +211,12 @@ export default function PetsScreen() {
           >
             Edit pet
           </AppButton>
+          <AttachmentSection
+            key={pet.id}
+            target="pets"
+            userId={userId}
+            entityId={pet.id}
+          />
           <Text
             accessibilityRole="header"
             style={[styles.heading, { color: colors.text }]}

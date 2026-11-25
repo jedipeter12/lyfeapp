@@ -208,6 +208,36 @@ describe("attachment service", () => {
     expect(row).not.toHaveProperty("signedUrl");
   });
 
+  it.each(["tasks", "pets", "vehicles"] as const)(
+    "scopes %s metadata list to owner, target, entity, and page",
+    async (target) => {
+      const { client, chain, bucket } = fakeClient();
+      chain.range.mockResolvedValue({
+        data: [{ ...row, entity_type: target }],
+        error: null,
+      });
+      await expect(
+        service(client).list(userId, target, entityId, 1),
+      ).resolves.toHaveLength(1);
+      expect(chain.eq).toHaveBeenCalledWith("user_id", userId);
+      expect(chain.eq).toHaveBeenCalledWith("entity_type", target);
+      expect(chain.eq).toHaveBeenCalledWith("entity_id", entityId);
+      expect(chain.range).toHaveBeenCalledWith(100, 199);
+      expect(bucket.createSignedUrl).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects a foreign metadata row returned from a list query", async () => {
+    const { client, chain } = fakeClient();
+    chain.range.mockResolvedValue({
+      data: [{ ...row, user_id: otherUserId }],
+      error: null,
+    });
+    await expect(
+      service(client).list(userId, "pets", entityId),
+    ).rejects.toThrow("owner or path");
+  });
+
   it("rejects a foreign or malformed metadata path before signing", async () => {
     const { client, chain, bucket } = fakeClient();
     chain.single.mockResolvedValue({

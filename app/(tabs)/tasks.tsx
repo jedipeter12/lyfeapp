@@ -4,6 +4,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { AppScreen } from "@/components/ui/AppScreen";
 import { AppTextField } from "@/components/ui/AppTextField";
 import { FeedbackState } from "@/components/ui/FeedbackState";
+import { AttachmentSection } from "@/features/attachments/AttachmentSection";
 import {
   useCreateEntity,
   useEntity,
@@ -54,6 +55,8 @@ export default function TasksScreen() {
     null,
   );
   const [historyPage, setHistoryPage] = useState(0);
+  const [attachmentTask, setAttachmentTask] =
+    useState<EntityRow<"tasks"> | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const tasks = useTasksByCompletion(userId, filter, page);
@@ -580,6 +583,27 @@ export default function TasksScreen() {
             Back to tasks
           </AppButton>
         </View>
+      ) : attachmentTask ? (
+        <View style={styles.section}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.heading, { color: colors.text }]}
+          >
+            {attachmentTask.title}
+          </Text>
+          <AttachmentSection
+            key={attachmentTask.id}
+            target="tasks"
+            userId={userId}
+            entityId={attachmentTask.id}
+          />
+          <AppButton
+            variant="secondary"
+            onPress={() => setAttachmentTask(null)}
+          >
+            Back to tasks
+          </AppButton>
+        </View>
       ) : (
         <>
           <AppButton onPress={() => editTask()}>New task</AppButton>
@@ -653,6 +677,12 @@ export default function TasksScreen() {
                   disabled={rules.isPending || rules.isError}
                 >
                   Edit
+                </AppButton>
+                <AppButton
+                  variant="secondary"
+                  onPress={() => setAttachmentTask(task)}
+                >
+                  Attachments for {task.title}
                 </AppButton>
                 {task.due_at && !task.completed_at ? (
                   <AppButton
