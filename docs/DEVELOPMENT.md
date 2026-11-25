@@ -109,7 +109,7 @@ Run `npm test -- --runTestsByPath src/features/vehicles/__tests__/vehicleForm.te
 
 ## L—18 vehicle service history
 
-The Vehicles tab records and corrects service entries with a service type, date, optional odometer, numeric nonnegative cost, and ISO three-letter currency code. When a cost is entered, the currency code is required. Service history is paged by date and ID. The same vehicle detail shows active linked tasks and can create a pending maintenance task for that vehicle; further task editing remains on the Tasks tab. Repository methods validate owner and vehicle references, require network connectivity for writes, and use the existing L—6 RLS, composite foreign keys, and column grants. The accepted restricted deletion policy still applies. No migration is needed.
+The Vehicles tab records and corrects service entries with a service type, date, optional odometer, numeric nonnegative cost, and uppercase three-letter currency code. When a cost is entered, the currency code is required. Service history is paged by date and ID. The same vehicle detail shows active linked tasks and can create a pending maintenance task for that vehicle; further task editing remains on the Tasks tab. Repository methods validate owner and vehicle references, require network connectivity for writes, and use the existing L—6 RLS, composite foreign keys, and column grants. The accepted restricted deletion policy still applies. No migration is needed.
 
 Run `npm test -- --runTestsByPath src/features/vehicles/__tests__/serviceForm.test.ts src/lib/supabase/__tests__/vehicleServices.test.ts 'app/(tabs)/__tests__/vehicles.test.tsx'` for validation, repository, and screen flows. Native device and hosted Data API flows remain unverified.
 
