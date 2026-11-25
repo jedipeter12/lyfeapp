@@ -107,6 +107,12 @@ The Vehicles tab lists paged owner-scoped profiles and supports creating and edi
 
 Run `npm test -- --runTestsByPath src/features/vehicles/__tests__/vehicleForm.test.ts src/lib/supabase/__tests__/vehicles.test.ts 'app/(tabs)/__tests__/vehicles.test.tsx'` for form, repository, and screen flows. The existing `supabase/tests/l7_ownership_security.sql` tests cross-owner mileage references in a disposable database. Hosted Data API and native device flows still need validation. [ADR-006](decisions/ADR-006-vehicle-deletion.md) retains the accepted L—6 individual vehicle deletion restriction for launch.
 
+## L—18 vehicle service history
+
+The Vehicles tab records and corrects service entries with a service type, date, optional odometer, numeric nonnegative cost, and ISO three-letter currency code. When a cost is entered, the currency code is required. Service history is paged by date and ID. The same vehicle detail shows active linked tasks and can create a pending maintenance task for that vehicle; further task editing remains on the Tasks tab. Repository methods validate owner and vehicle references, require network connectivity for writes, and use the existing L—6 RLS, composite foreign keys, and column grants. The accepted restricted deletion policy still applies. No migration is needed.
+
+Run `npm test -- --runTestsByPath src/features/vehicles/__tests__/serviceForm.test.ts src/lib/supabase/__tests__/vehicleServices.test.ts 'app/(tabs)/__tests__/vehicles.test.tsx'` for validation, repository, and screen flows. Native device and hosted Data API flows remain unverified.
+
 ## Security and privacy
 
 Never commit credentials or real personal information. `.gitignore` excludes common local secret files, but ignore rules are not a secret scanner. Inspect staged changes before committing. Enable GitHub secret scanning and dependency alerts in repository settings if available; those settings are outside the tracked repository and have not been verified here. `npm ci` currently reports moderate dependency advisories; assess those separately before adding an audit gate or upgrading Expo dependencies.
