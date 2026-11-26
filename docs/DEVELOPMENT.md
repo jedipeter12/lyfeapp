@@ -119,6 +119,14 @@ The Vehicles tab records and corrects service entries with a service type, date,
 
 Run `npm test -- --runTestsByPath src/features/vehicles/__tests__/serviceForm.test.ts src/lib/supabase/__tests__/vehicleServices.test.ts 'app/(tabs)/__tests__/vehicles.test.tsx'` for validation, repository, and screen flows. Native device and hosted Data API flows remain unverified.
 
+## L—19 dashboard and module preferences
+
+Home shows up to five pending dated tasks, five future pending reminders for active tasks, and five recent records drawn from task completions, pet weights, and vehicle service history. Tasks are ordered by due time, reminders by scheduled time, and recent records by their event date. A missing `module_preferences` row means the module is enabled. The Home switches persist `enabled` for Tasks, Pets, and Vehicles; disabled modules are hidden from the tab bar and Home overview. The switches are an interface preference, not a change to stored records or server permissions. Home stays available so modules can be re-enabled.
+
+`src/lib/supabase/dashboard.ts` owns the bounded owner-scoped reads and preference writes. Existing baseline RLS and column grants remain the server boundary; no migration is needed. Dashboard cache is invalidated after task, pet-weight, and vehicle-service writes. Reminders will appear when L—14's pending reminder flow is available; its branch has not been merged into this baseline. Authenticated hosted and native iOS/Android checks remain necessary before release.
+
+Run `npm test -- --runTestsByPath src/lib/supabase/__tests__/dashboard.test.ts 'app/(tabs)/__tests__/home.test.tsx'` for owner scoping, preference writes, bounded ordering, and Home states.
+
 ## Security and privacy
 
 Never commit credentials or real personal information. `.gitignore` excludes common local secret files, but ignore rules are not a secret scanner. Inspect staged changes before committing. Enable GitHub secret scanning and dependency alerts in repository settings if available; those settings are outside the tracked repository and have not been verified here. `npm ci` currently reports moderate dependency advisories; assess those separately before adding an audit gate or upgrading Expo dependencies.

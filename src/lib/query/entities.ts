@@ -5,6 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { repositories } from "@/lib/supabase/repositories";
+import { dashboardKeys } from "@/lib/query/dashboard";
 import type {
   EntityCreate,
   EntityRow,
@@ -63,7 +64,10 @@ export function invalidateEntityQueries(
   userId: string,
   table: EntityTable,
 ) {
-  return client.invalidateQueries({ queryKey: entityKeys.all(userId, table) });
+  return Promise.all([
+    client.invalidateQueries({ queryKey: entityKeys.all(userId, table) }),
+    client.invalidateQueries({ queryKey: dashboardKeys.data(userId) }),
+  ]);
 }
 
 export function useProfile(userId?: string) {
@@ -272,9 +276,12 @@ export function useAddVehicleService(userId: string, vehicleId: string) {
       >[2],
     ) => requiredRepositories().addVehicleService(userId, vehicleId, input),
     onSuccess: () =>
-      client.invalidateQueries({
-        queryKey: ["user", userId, "vehicle-services", vehicleId],
-      }),
+      Promise.all([
+        client.invalidateQueries({
+          queryKey: ["user", userId, "vehicle-services", vehicleId],
+        }),
+        client.invalidateQueries({ queryKey: dashboardKeys.data(userId) }),
+      ]),
   });
 }
 
@@ -292,9 +299,12 @@ export function useUpdateVehicleService(userId: string, vehicleId: string) {
     }) =>
       requiredRepositories().updateVehicleService(userId, vehicleId, id, input),
     onSuccess: () =>
-      client.invalidateQueries({
-        queryKey: ["user", userId, "vehicle-services", vehicleId],
-      }),
+      Promise.all([
+        client.invalidateQueries({
+          queryKey: ["user", userId, "vehicle-services", vehicleId],
+        }),
+        client.invalidateQueries({ queryKey: dashboardKeys.data(userId) }),
+      ]),
   });
 }
 
@@ -321,9 +331,12 @@ export function useAddPetWeight(userId: string, petId: string) {
     mutationFn: (input: z.input<typeof petWeightCreate>) =>
       requiredRepositories().addPetWeight(userId, petId, input),
     onSuccess: () =>
-      client.invalidateQueries({
-        queryKey: ["user", userId, "pet-weights", petId],
-      }),
+      Promise.all([
+        client.invalidateQueries({
+          queryKey: ["user", userId, "pet-weights", petId],
+        }),
+        client.invalidateQueries({ queryKey: dashboardKeys.data(userId) }),
+      ]),
   });
 }
 
@@ -338,9 +351,12 @@ export function useUpdatePetWeight(userId: string, petId: string) {
       changes: z.input<typeof petWeightUpdate>;
     }) => requiredRepositories().updatePetWeight(userId, petId, id, changes),
     onSuccess: () =>
-      client.invalidateQueries({
-        queryKey: ["user", userId, "pet-weights", petId],
-      }),
+      Promise.all([
+        client.invalidateQueries({
+          queryKey: ["user", userId, "pet-weights", petId],
+        }),
+        client.invalidateQueries({ queryKey: dashboardKeys.data(userId) }),
+      ]),
   });
 }
 
