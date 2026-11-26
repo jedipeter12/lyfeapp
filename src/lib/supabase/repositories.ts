@@ -14,6 +14,9 @@ import {
 } from "@/schemas/customFields";
 import {
   entitySchemas,
+  petWeightCreate,
+  petWeightRow,
+  petWeightUpdate,
   profileRow,
   profileUpdate,
   type EntityCreate,
@@ -21,8 +24,23 @@ import {
   type EntityTable,
   type EntityUpdate,
   type Profile,
+  type PetWeightEntry,
 } from "@/schemas/entities";
 import { supabase } from "./client";
+import {
+  petCareSchemas,
+  type PetCareInput,
+  type PetCareKind,
+  type PetCareRow,
+} from "@/schemas/petCare";
+import {
+  mileageEntryCreate,
+  mileageEntryRow,
+  type MileageEntry,
+  serviceRecordCreate,
+  serviceRecordRow,
+  type ServiceRecord,
+} from "@/schemas/vehicles";
 import {
   localDateAt,
   localTimeAt,
@@ -303,6 +321,182 @@ export function createRepositories(
       return parseOwned(entitySchemas[table].row, data, userId) as EntityRow<T>;
     },
 
+    async listVehicleMileage(
+      userId: string,
+      vehicleId: string,
+      page = 0,
+    ): Promise<MileageEntry[]> {
+      z.uuid().parse(userId);
+      z.uuid().parse(vehicleId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      await this.get("vehicles", userId, vehicleId);
+      const start = page * 100;
+      const { data, error } = await client
+        .from("vehicle_mileage_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("vehicle_id", vehicleId)
+        .order("recorded_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) => {
+        const entry = parseOwned(
+          mileageEntryRow,
+          value,
+          userId,
+        ) as MileageEntry;
+        if (entry.vehicle_id !== vehicleId)
+          throw new Error("Unexpected vehicle link");
+        return entry;
+      });
+    },
+
+    async addVehicleMileage(
+      userId: string,
+      vehicleId: string,
+      input: z.input<typeof mileageEntryCreate>,
+    ): Promise<MileageEntry> {
+      z.uuid().parse(userId);
+      z.uuid().parse(vehicleId);
+      const payload = mileageEntryCreate.parse(input);
+      await assertOnline();
+      await this.get("vehicles", userId, vehicleId);
+      const { data, error } = await client
+        .from("vehicle_mileage_entries")
+        .insert({ ...payload, user_id: userId, vehicle_id: vehicleId })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const entry = parseOwned(mileageEntryRow, data, userId) as MileageEntry;
+      if (entry.vehicle_id !== vehicleId)
+        throw new Error("Unexpected vehicle link");
+      return entry;
+    },
+
+    async listVehicleServices(
+      userId: string,
+      vehicleId: string,
+      page = 0,
+    ): Promise<ServiceRecord[]> {
+      z.uuid().parse(userId);
+      z.uuid().parse(vehicleId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      await this.get("vehicles", userId, vehicleId);
+      const start = page * 100;
+      const { data, error } = await client
+        .from("vehicle_service_records")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("vehicle_id", vehicleId)
+        .order("performed_on", { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) => {
+        const record = parseOwned(
+          serviceRecordRow,
+          value,
+          userId,
+        ) as ServiceRecord;
+        if (record.vehicle_id !== vehicleId)
+          throw new Error("Unexpected vehicle link");
+        return record;
+      });
+    },
+
+    async addVehicleService(
+      userId: string,
+      vehicleId: string,
+      input: z.input<typeof serviceRecordCreate>,
+    ): Promise<ServiceRecord> {
+      z.uuid().parse(userId);
+      z.uuid().parse(vehicleId);
+      const payload = serviceRecordCreate.parse(input);
+      await assertOnline();
+      await this.get("vehicles", userId, vehicleId);
+      const { data, error } = await client
+        .from("vehicle_service_records")
+        .insert({ ...payload, user_id: userId, vehicle_id: vehicleId })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const record = parseOwned(
+        serviceRecordRow,
+        data,
+        userId,
+      ) as ServiceRecord;
+      if (record.vehicle_id !== vehicleId)
+        throw new Error("Unexpected vehicle link");
+      return record;
+    },
+
+    async updateVehicleService(
+      userId: string,
+      vehicleId: string,
+      recordId: string,
+      input: z.input<typeof serviceRecordCreate>,
+    ): Promise<ServiceRecord> {
+      z.uuid().parse(userId);
+      z.uuid().parse(vehicleId);
+      z.uuid().parse(recordId);
+      const payload = serviceRecordCreate.parse(input);
+      await assertOnline();
+      await this.get("vehicles", userId, vehicleId);
+      const { data, error } = await client
+        .from("vehicle_service_records")
+        .update(payload)
+        .eq("user_id", userId)
+        .eq("vehicle_id", vehicleId)
+        .eq("id", recordId)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const record = parseOwned(
+        serviceRecordRow,
+        data,
+        userId,
+      ) as ServiceRecord;
+      if (record.vehicle_id !== vehicleId)
+        throw new Error("Unexpected vehicle link");
+      return record;
+    },
+
+    async listVehicleTasks(
+      userId: string,
+      vehicleId: string,
+      page = 0,
+    ): Promise<EntityRow<"tasks">[]> {
+      z.uuid().parse(userId);
+      z.uuid().parse(vehicleId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      await this.get("vehicles", userId, vehicleId);
+      const start = page * 100;
+      const { data, error } = await client
+        .from("tasks")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("vehicle_id", vehicleId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) => {
+        const task = parseOwned(
+          entitySchemas.tasks.row,
+          value,
+          userId,
+        ) as EntityRow<"tasks">;
+        if (task.vehicle_id !== vehicleId || task.deleted_at)
+          throw new Error("Unexpected task link");
+        return task;
+      });
+    },
+
     async create<T extends EntityTable>(
       table: T,
       userId: string,
@@ -341,6 +535,158 @@ export function createRepositories(
         .single();
       if (error) throw error;
       return parseOwned(entitySchemas[table].row, data, userId) as EntityRow<T>;
+    },
+
+    async listPetWeights(
+      userId: string,
+      petId: string,
+      page = 0,
+    ): Promise<PetWeightEntry[]> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      const start = page * 100;
+      const { data, error } = await client
+        .from("pet_weight_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("pet_id", petId)
+        .order("measured_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) => {
+        const entry = parseOwned(petWeightRow, value, userId) as PetWeightEntry;
+        if (entry.pet_id !== petId) throw new Error("Unexpected pet reference");
+        return entry;
+      });
+    },
+
+    async addPetWeight(
+      userId: string,
+      petId: string,
+      input: z.input<typeof petWeightCreate>,
+    ): Promise<PetWeightEntry> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      const payload = petWeightCreate.parse(input);
+      await assertOnline();
+      const { data, error } = await client
+        .from("pet_weight_entries")
+        .insert({ ...payload, user_id: userId, pet_id: petId })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const entry = parseOwned(petWeightRow, data, userId) as PetWeightEntry;
+      if (entry.pet_id !== petId) throw new Error("Unexpected pet reference");
+      return entry;
+    },
+
+    async updatePetWeight(
+      userId: string,
+      petId: string,
+      entryId: string,
+      changes: z.input<typeof petWeightUpdate>,
+    ): Promise<PetWeightEntry> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      z.uuid().parse(entryId);
+      const payload = petWeightUpdate.parse(changes);
+      if (Object.keys(payload).length === 0)
+        throw new Error("No changes to save");
+      await assertOnline();
+      const { data, error } = await client
+        .from("pet_weight_entries")
+        .update(payload)
+        .eq("user_id", userId)
+        .eq("pet_id", petId)
+        .eq("id", entryId)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const entry = parseOwned(petWeightRow, data, userId) as PetWeightEntry;
+      if (entry.pet_id !== petId || entry.id !== entryId)
+        throw new Error("Unexpected pet reference");
+      return entry;
+    },
+
+    async listPetCare<K extends PetCareKind>(
+      kind: K,
+      userId: string,
+      petId: string,
+      page = 0,
+    ): Promise<PetCareRow<K>[]> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      if (!Number.isSafeInteger(page) || page < 0)
+        throw new Error("Invalid page");
+      const schema = petCareSchemas[kind];
+      const start = page * 100;
+      const { data, error } = await client
+        .from(schema.table)
+        .select("*")
+        .eq("user_id", userId)
+        .eq("pet_id", petId)
+        .order(schema.order, { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, start + 99);
+      if (error) throw error;
+      return (data ?? []).map((value) => {
+        const row = parseOwned(schema.row, value, userId) as PetCareRow<K>;
+        if (row.pet_id !== petId) throw new Error("Unexpected pet reference");
+        return row;
+      });
+    },
+
+    async addPetCare<K extends PetCareKind>(
+      kind: K,
+      userId: string,
+      petId: string,
+      input: PetCareInput<K>,
+    ): Promise<PetCareRow<K>> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      const schema = petCareSchemas[kind];
+      const payload = schema.input.parse(input);
+      await assertOnline();
+      const { data, error } = await client
+        .from(schema.table)
+        .insert({ ...payload, user_id: userId, pet_id: petId })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const row = parseOwned(schema.row, data, userId) as PetCareRow<K>;
+      if (row.pet_id !== petId) throw new Error("Unexpected pet reference");
+      return row;
+    },
+
+    async updatePetCare<K extends PetCareKind>(
+      kind: K,
+      userId: string,
+      petId: string,
+      entryId: string,
+      changes: PetCareInput<K>,
+    ): Promise<PetCareRow<K>> {
+      z.uuid().parse(userId);
+      z.uuid().parse(petId);
+      z.uuid().parse(entryId);
+      const schema = petCareSchemas[kind];
+      const payload = schema.input.parse(changes);
+      await assertOnline();
+      const { data, error } = await client
+        .from(schema.table)
+        .update(payload)
+        .eq("user_id", userId)
+        .eq("pet_id", petId)
+        .eq("id", entryId)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const row = parseOwned(schema.row, data, userId) as PetCareRow<K>;
+      if (row.pet_id !== petId || row.id !== entryId)
+        throw new Error("Unexpected pet reference");
+      return row;
     },
 
     async markTaskDeleted(
