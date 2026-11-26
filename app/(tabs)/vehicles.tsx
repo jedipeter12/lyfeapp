@@ -4,6 +4,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { AppScreen } from "@/components/ui/AppScreen";
 import { AppTextField } from "@/components/ui/AppTextField";
 import { FeedbackState } from "@/components/ui/FeedbackState";
+import { AttachmentSection } from "@/features/attachments/AttachmentSection";
 import {
   initialVehicleDraft,
   mileageInputFromDraft,
@@ -276,6 +277,12 @@ export default function VehiclesScreen() {
           <AppButton onPress={() => openEditor(selected)} variant="secondary">
             Edit vehicle
           </AppButton>
+          <AttachmentSection
+            key={selected.id}
+            target="vehicles"
+            userId={userId}
+            entityId={selected.id}
+          />
           <AppTextField
             label="New mileage reading"
             value={mileage}

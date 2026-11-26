@@ -26,6 +26,24 @@ const mockCreateTask = jest.fn();
 jest.mock("@/lib/supabase/AuthProvider", () => ({
   useAuth: () => ({ session: { user: { id: userId } } }),
 }));
+jest.mock("@/features/attachments/AttachmentSection", () => ({
+  AttachmentSection: ({
+    target,
+    userId,
+    entityId,
+  }: {
+    target: string;
+    userId: string;
+    entityId: string;
+  }) =>
+    jest
+      .requireActual<typeof import("react")>("react")
+      .createElement(
+        jest.requireActual<typeof import("react-native")>("react-native").Text,
+        null,
+        `Attachments ${target} ${userId} ${entityId}`,
+      ),
+}));
 jest.mock("@/lib/query/entities", () => ({
   useEntityList: (...args: unknown[]) => mockList(...args),
   usePetWeights: (...args: unknown[]) => mockWeights(...args),
@@ -64,6 +82,7 @@ it("shows an empty state, creates a pet, and adds a weight", async () => {
     ),
   );
   expect(screen.getByText("No weights yet")).toBeTruthy();
+  expect(screen.getByText(`Attachments pets ${userId} ${pet.id}`)).toBeTruthy();
   await fireEvent.press(screen.getByRole("button", { name: "Add weight" }));
   await fireEvent.changeText(screen.getByLabelText("Weight (kg)"), "4.25");
   await fireEvent.press(screen.getByRole("button", { name: "Save weight" }));

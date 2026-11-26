@@ -22,6 +22,24 @@ let mockServiceRows: Record<string, unknown>[] = [];
 jest.mock("@/lib/supabase/AuthProvider", () => ({
   useAuth: () => ({ session: { user: { id: userId } } }),
 }));
+jest.mock("@/features/attachments/AttachmentSection", () => ({
+  AttachmentSection: ({
+    target,
+    userId,
+    entityId,
+  }: {
+    target: string;
+    userId: string;
+    entityId: string;
+  }) =>
+    jest
+      .requireActual<typeof import("react")>("react")
+      .createElement(
+        jest.requireActual<typeof import("react-native")>("react-native").Text,
+        null,
+        `Attachments ${target} ${userId} ${entityId}`,
+      ),
+}));
 jest.mock("@/lib/query/entities", () => ({
   useEntityList: () => ({ data: [vehicle], isPending: false, isError: false }),
   useVehicleMileage: () => ({ data: [], isPending: false, isError: false }),
@@ -66,6 +84,9 @@ it("corrects an existing service record", async () => {
   await fireEvent.press(
     screen.getByRole("button", { name: "2021 Example Sedan 100 miles" }),
   );
+  expect(
+    screen.getByText(`Attachments vehicles ${userId} ${vehicle.id}`),
+  ).toBeTruthy();
   await fireEvent.press(screen.getByRole("button", { name: "Edit Oil" }));
   await fireEvent.changeText(screen.getByLabelText("Cost (optional)"), "42");
   await fireEvent.press(screen.getByRole("button", { name: "Update service" }));
