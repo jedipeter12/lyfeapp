@@ -38,7 +38,7 @@ Establish the approved Expo app foundation, then follow the Notion ticket depend
 
 ## Next
 
-- Finish [L—21](https://app.notion.com/p/41f35ab73db381bebebad165a8aec0c3) by verifying recurrence through authenticated hosted Data API, app, and device flows with temporary confirmed synthetic accounts, then clean up and audit for residual rows. The current Supabase connector has no Auth admin operation, the CLI could not connect in this environment, and browser access was unavailable during the rollout. Production remains separate.
+- Finish [L—21](https://app.notion.com/p/41f35ab73db381bebebad165a8aec0c3) by verifying recurrence through app and native device flows. Authenticated hosted Data API checks passed with temporary confirmed synthetic accounts on 2026-11-26. Auth users were deleted, and a separate database audit found no synthetic users or orphaned profiles, tasks, recurrence rules, or task occurrences. Production remains separate.
 - Verify picking, viewing, and confirmed attachment deletion for all three modules on iOS and Android with an authenticated development account before release.
 - Verify hosted signup with an organization member's email address, confirm it, edit the profile, restart the app to check session restoration, and sign out. Use a separate production project before a production release.
 

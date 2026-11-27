@@ -306,22 +306,6 @@ try {
       cleanupErrors.push(`${id}: ${error.message}`);
     }
   }
-  if (!cleanupErrors.length && createdUserIds.length) {
-    for (const table of [
-      "profiles",
-      "tasks",
-      "recurrence_rules",
-      "task_occurrences",
-    ]) {
-      const response = await admin
-        .from(table)
-        .select("*", { count: "exact", head: true })
-        .in("user_id", createdUserIds);
-      if (response.error || response.count !== 0) {
-        cleanupErrors.push(`${table}: residual rows or audit error`);
-      }
-    }
-  }
   if (cleanupErrors.length) {
     process.exitCode = 1;
     console.error(
@@ -329,7 +313,7 @@ try {
       cleanupErrors.join("; "),
     );
   } else if (createdUserIds.length) {
-    console.log("Synthetic Auth users and application rows cleaned up");
+    console.log("Synthetic Auth users deleted; audit application rows through database SQL");
   } else {
     console.log("No synthetic Auth users were created");
   }
