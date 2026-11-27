@@ -37,6 +37,24 @@ jest.mock("@/services/notifications/localNotifications", () => ({
   requestReminderPermission: () => mockRequestPermission(),
   reconcileLocalReminders: (...args: unknown[]) => mockReconcile(...args),
 }));
+jest.mock("@/features/attachments/AttachmentSection", () => ({
+  AttachmentSection: ({
+    target,
+    userId,
+    entityId,
+  }: {
+    target: string;
+    userId: string;
+    entityId: string;
+  }) =>
+    jest
+      .requireActual<typeof import("react")>("react")
+      .createElement(
+        jest.requireActual<typeof import("react-native")>("react-native").Text,
+        null,
+        `Attachments ${target} ${userId} ${entityId}`,
+      ),
+}));
 jest.mock("@/lib/query/entities", () => ({
   useTasksByCompletion: (...args: unknown[]) => mockList(...args),
   useEntity: () => ({ data: null }),
@@ -155,4 +173,18 @@ it("creates a linked task and submits completion through the task mutation", asy
   );
   await fireEvent.press(screen.getByRole("button", { name: "completed" }));
   expect(mockList).toHaveBeenLastCalledWith(task.user_id, "completed", 0);
+});
+
+it("opens the selected task's owner-scoped attachment view", async () => {
+  const screen = await render(<TasksScreen />);
+  await fireEvent.press(
+    screen.getByRole("button", { name: `Attachments for ${task.title}` }),
+  );
+  expect(
+    screen.getByText(`Attachments tasks ${task.user_id} ${task.id}`),
+  ).toBeTruthy();
+  await fireEvent.press(screen.getByRole("button", { name: "Back to tasks" }));
+  expect(
+    screen.getByRole("button", { name: `Attachments for ${task.title}` }),
+  ).toBeTruthy();
 });

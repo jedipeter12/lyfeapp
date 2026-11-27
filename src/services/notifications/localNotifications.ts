@@ -84,6 +84,7 @@ export function reconcileLocalReminders(userId: string | null) {
   const run = async () => {
     await cancelForeignReminders(userId, device);
     if (!userId || !repositories) return;
+    await ensureChannel();
     const permitted = await hasPermission();
     if (!permitted) {
       await reconcileReminderPlans(userId, [], [], false, device);
