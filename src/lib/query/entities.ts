@@ -45,6 +45,7 @@ export const entityKeys = {
   profile: (userId: string) => ["user", userId, "profile"] as const,
   recurrenceRules: (userId: string) =>
     ["user", userId, "recurrence-rules"] as const,
+  reminders: (userId: string) => ["user", userId, "reminders"] as const,
   occurrenceHistory: (userId: string, taskId: string, page: number) =>
     ["user", userId, "task-occurrences", taskId, page] as const,
   vehicleMileage: (userId: string, vehicleId: string, page: number) =>
@@ -134,6 +135,40 @@ export function useTaskRecurrenceRules(
     queryFn: () =>
       requiredRepositories().listTaskRecurrenceRules(userId!, taskIds),
     enabled: Boolean(userId && repositories && taskIds.length),
+  });
+}
+
+export function useTaskReminders(userId?: string, taskIds: string[] = []) {
+  return useQuery({
+    queryKey: [...entityKeys.reminders(userId ?? ""), ...taskIds],
+    queryFn: () => requiredRepositories().listTaskReminders(userId!, taskIds),
+    enabled: Boolean(userId && repositories && taskIds.length),
+  });
+}
+
+export function useEnableTaskReminder(userId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (taskId: string) =>
+      requiredRepositories().enableTaskReminder(userId, taskId),
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: entityKeys.reminders(userId) }),
+        client.invalidateQueries({ queryKey: dashboardKeys.data(userId) }),
+      ]),
+  });
+}
+
+export function useDisableTaskReminder(userId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (taskId: string) =>
+      requiredRepositories().disableTaskReminder(userId, taskId),
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: entityKeys.reminders(userId) }),
+        client.invalidateQueries({ queryKey: dashboardKeys.data(userId) }),
+      ]),
   });
 }
 

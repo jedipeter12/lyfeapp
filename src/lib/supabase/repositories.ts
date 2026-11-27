@@ -54,6 +54,7 @@ import {
   type RecurrenceRuleInput,
   type TaskOccurrence,
 } from "@/schemas/recurrence";
+import { reminderRow, type Reminder } from "@/schemas/reminders";
 
 export class OfflineWriteError extends Error {
   constructor() {
@@ -197,6 +198,135 @@ export function createRepositories(
         (value) =>
           parseOwned(recurrenceRuleRow, value, userId) as RecurrenceRule,
       );
+    },
+
+    async listTaskReminders(
+      userId: string,
+      taskIds: string[],
+    ): Promise<Reminder[]> {
+      z.uuid().parse(userId);
+      if (!taskIds.length) return [];
+      taskIds.forEach((id) => z.uuid().parse(id));
+      const { data, error } = await client
+        .from("reminders")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .in("task_id", taskIds);
+      if (error) throw error;
+      return (data ?? []).map((value) =>
+        parseOwned(reminderRow, value, userId),
+      ) as Reminder[];
+    },
+
+    async listPendingReminders(userId: string): Promise<Reminder[]> {
+      z.uuid().parse(userId);
+      const reminders: Reminder[] = [];
+      for (let start = 0; ; start += 100) {
+        const { data, error } = await client
+          .from("reminders")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("status", "pending")
+          .order("id")
+          .range(start, start + 99);
+        if (error) throw error;
+        reminders.push(
+          ...(data ?? []).map(
+            (value) => parseOwned(reminderRow, value, userId) as Reminder,
+          ),
+        );
+        if (!data || data.length < 100) return reminders;
+      }
+    },
+
+    async listReminderTasks(
+      userId: string,
+      taskIds: string[],
+    ): Promise<EntityRow<"tasks">[]> {
+      z.uuid().parse(userId);
+      if (!taskIds.length) return [];
+      taskIds.forEach((id) => z.uuid().parse(id));
+      const tasks: EntityRow<"tasks">[] = [];
+      for (let start = 0; start < taskIds.length; start += 100) {
+        const { data, error } = await client
+          .from("tasks")
+          .select("*")
+          .eq("user_id", userId)
+          .in("id", taskIds.slice(start, start + 100));
+        if (error) throw error;
+        tasks.push(
+          ...(data ?? []).map(
+            (value) =>
+              parseOwned(
+                entitySchemas.tasks.row,
+                value,
+                userId,
+              ) as EntityRow<"tasks">,
+          ),
+        );
+      }
+      return tasks;
+    },
+
+    async enableTaskReminder(
+      userId: string,
+      taskId: string,
+    ): Promise<Reminder> {
+      z.uuid().parse(userId);
+      z.uuid().parse(taskId);
+      await assertOnline();
+      const task = await this.get("tasks", userId, taskId);
+      if (task.deleted_at || task.completed_at || !task.due_at)
+        throw new Error("Set an active due date before enabling a reminder.");
+      if (new Date(task.due_at).getTime() <= Date.now())
+        throw new Error("Set a future due date before enabling a reminder.");
+      const { data: existing, error: lookupError } = await client
+        .from("reminders")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("task_id", taskId)
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      if (lookupError) throw lookupError;
+      const row = existing?.[0];
+      if (row?.status === "pending" && row.remind_at === task.due_at)
+        return parseOwned(reminderRow, row, userId) as Reminder;
+      const request = row
+        ? client
+            .from("reminders")
+            .update({ remind_at: task.due_at, status: "pending" })
+            .eq("user_id", userId)
+            .eq("task_id", taskId)
+            .eq("id", row.id)
+        : client.from("reminders").insert({
+            user_id: userId,
+            task_id: taskId,
+            remind_at: task.due_at,
+            status: "pending",
+          });
+      const { data, error } = await request.select("*").single();
+      if (error) {
+        if (error.code === "23505") {
+          const current = await this.listTaskReminders(userId, [taskId]);
+          if (current[0]) return current[0];
+        }
+        throw error;
+      }
+      return parseOwned(reminderRow, data, userId) as Reminder;
+    },
+
+    async disableTaskReminder(userId: string, taskId: string): Promise<void> {
+      z.uuid().parse(userId);
+      z.uuid().parse(taskId);
+      await assertOnline();
+      const { error } = await client
+        .from("reminders")
+        .update({ status: "cancelled" })
+        .eq("user_id", userId)
+        .eq("task_id", taskId)
+        .eq("status", "pending");
+      if (error) throw error;
     },
 
     async listTaskOccurrences(

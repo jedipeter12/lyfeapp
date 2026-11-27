@@ -7,6 +7,11 @@ const mockList = jest.fn();
 const mockRules = jest.fn();
 const mockCompleteRecurring = jest.fn();
 const mockSaveRule = jest.fn();
+const mockReminders = jest.fn();
+const mockEnableReminder = jest.fn();
+const mockDisableReminder = jest.fn();
+const mockRequestPermission = jest.fn();
+const mockReconcile = jest.fn();
 const task = {
   id: "44444444-4444-4444-8444-444444444444",
   user_id: "11111111-1111-4111-8111-111111111111",
@@ -27,6 +32,10 @@ jest.mock("@/lib/supabase/AuthProvider", () => ({
   useAuth: () => ({
     session: { user: { id: "11111111-1111-4111-8111-111111111111" } },
   }),
+}));
+jest.mock("@/services/notifications/localNotifications", () => ({
+  requestReminderPermission: () => mockRequestPermission(),
+  reconcileLocalReminders: (...args: unknown[]) => mockReconcile(...args),
 }));
 jest.mock("@/features/attachments/AttachmentSection", () => ({
   AttachmentSection: ({
@@ -65,6 +74,9 @@ jest.mock("@/lib/query/entities", () => ({
   useCreateEntity: () => ({ mutateAsync: mockCreate }),
   useUpdateEntity: () => ({ mutateAsync: mockUpdate }),
   useTaskRecurrenceRules: () => mockRules(),
+  useTaskReminders: () => mockReminders(),
+  useEnableTaskReminder: () => ({ mutateAsync: mockEnableReminder }),
+  useDisableTaskReminder: () => ({ mutateAsync: mockDisableReminder }),
   useTaskOccurrenceHistory: () => ({ data: [], isPending: false }),
   useSaveTaskRecurrenceRule: () => ({ mutateAsync: mockSaveRule }),
   useCompleteRecurringTask: () => ({ mutateAsync: mockCompleteRecurring }),
@@ -79,6 +91,28 @@ beforeEach(() => {
     .mockReturnValue({ data: [], isPending: false, isError: false });
   mockCompleteRecurring.mockReset().mockResolvedValue({});
   mockSaveRule.mockReset().mockResolvedValue({});
+  mockReminders.mockReset().mockReturnValue({
+    data: [],
+    isPending: false,
+    isError: false,
+    refetch: jest.fn().mockResolvedValue({ data: [] }),
+  });
+  mockEnableReminder.mockReset().mockResolvedValue({});
+  mockDisableReminder.mockReset().mockResolvedValue({});
+  mockRequestPermission.mockReset().mockResolvedValue(true);
+  mockReconcile.mockReset().mockResolvedValue(undefined);
+});
+
+it("asks for notification permission only when enabling a due reminder", async () => {
+  mockList.mockReturnValue({
+    data: [{ ...task, due_at: "2099-05-01T14:00:00.000Z" }],
+  });
+  const screen = await render(<TasksScreen />);
+  expect(mockRequestPermission).not.toHaveBeenCalled();
+  fireEvent.press(screen.getByRole("button", { name: "Remind at due time" }));
+  await waitFor(() => expect(mockEnableReminder).toHaveBeenCalledWith(task.id));
+  expect(mockRequestPermission).toHaveBeenCalledTimes(1);
+  expect(mockReconcile).toHaveBeenCalledWith(task.user_id);
 });
 
 it("completes a recurring occurrence through the atomic mutation and shows history", async () => {

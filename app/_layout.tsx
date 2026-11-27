@@ -4,12 +4,14 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider } from "@/lib/supabase/AuthProvider";
 import { QueryProvider } from "@/lib/query/QueryProvider";
 import { navigationTheme, useAppTheme } from "@/theme";
+import { NotificationLifecycle } from "@/services/notifications/NotificationLifecycle";
 
 export default function RootLayout() {
   const { scheme } = useAppTheme();
   return (
     <AuthProvider>
       <QueryProvider>
+        <NotificationLifecycle />
         <ThemeProvider value={navigationTheme(scheme)}>
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />

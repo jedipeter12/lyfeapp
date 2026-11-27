@@ -11,6 +11,9 @@ import {
   useEntityList,
   useTasksByCompletion,
   useTaskRecurrenceRules,
+  useTaskReminders,
+  useEnableTaskReminder,
+  useDisableTaskReminder,
   useTaskOccurrenceHistory,
   useSaveTaskRecurrenceRule,
   useCompleteRecurringTask,
@@ -28,6 +31,10 @@ import {
 } from "@/features/tasks/taskForm";
 import { resolveLocalTime, type Frequency } from "@/features/tasks/recurrence";
 import { localDateAt } from "@/features/tasks/recurrence";
+import {
+  reconcileLocalReminders,
+  requestReminderPermission,
+} from "@/services/notifications/localNotifications";
 
 type Completion = "all" | "pending" | "completed";
 type RepeatDraft = {
@@ -64,6 +71,10 @@ export default function TasksScreen() {
     userId,
     tasks.data?.map((task) => task.id) ?? [],
   );
+  const reminders = useTaskReminders(
+    userId,
+    tasks.data?.map((task) => task.id) ?? [],
+  );
   const selectedTask = repeatTask ?? historyTask;
   const occurrences = useTaskOccurrenceHistory(
     userId,
@@ -82,9 +93,61 @@ export default function TasksScreen() {
   const updateTask = useUpdateEntity("tasks", userId);
   const saveRule = useSaveTaskRecurrenceRule(userId);
   const completeRecurring = useCompleteRecurringTask(userId);
+  const enableReminder = useEnableTaskReminder(userId);
+  const disableReminder = useDisableTaskReminder(userId);
 
   function ruleFor(taskId: string) {
     return rules.data?.find((rule) => rule.task_id === taskId) ?? null;
+  }
+
+  function reminderFor(taskId: string) {
+    return reminders.data?.find((reminder) => reminder.task_id === taskId);
+  }
+
+  async function syncReminders() {
+    await reconcileLocalReminders(userId);
+    await reminders.refetch();
+  }
+
+  async function toggleReminder(task: EntityRow<"tasks">) {
+    if (busyId) return;
+    setBusyId(task.id);
+    setMessage("");
+    try {
+      if (reminderFor(task.id)) {
+        await disableReminder.mutateAsync(task.id);
+        try {
+          await syncReminders();
+          setMessage("Reminder off.");
+        } catch {
+          setMessage("Reminder turned off; device sync will retry.");
+        }
+      } else {
+        if (!(await requestReminderPermission())) {
+          setMessage(
+            "Allow notifications in device settings to enable a reminder.",
+          );
+          return;
+        }
+        await enableReminder.mutateAsync(task.id);
+        try {
+          await syncReminders();
+          setMessage("Reminder on for the due time.");
+        } catch {
+          setMessage("Reminder saved; device sync will retry.");
+        }
+      }
+    } catch (error) {
+      setMessage(
+        error instanceof OfflineWriteError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Could not change reminder.",
+      );
+    } finally {
+      setBusyId(null);
+    }
   }
 
   function editTask(task?: EntityRow<"tasks">) {
@@ -121,7 +184,12 @@ export default function TasksScreen() {
       setDraft(null);
       setEditing(null);
       setPage(0);
-      setMessage("Task saved.");
+      try {
+        await syncReminders();
+        setMessage("Task saved.");
+      } catch {
+        setMessage("Task saved; reminder sync will retry.");
+      }
     } catch (error) {
       setMessage(
         error instanceof OfflineWriteError
@@ -143,7 +211,12 @@ export default function TasksScreen() {
     try {
       if (rule) {
         await completeRecurring.mutateAsync({ task, rule });
-        setMessage("Occurrence completed.");
+        try {
+          await syncReminders();
+          setMessage("Occurrence completed.");
+        } catch {
+          setMessage("Occurrence completed; reminder sync will retry.");
+        }
         return;
       }
       const completed = Boolean(task.completed_at);
@@ -154,7 +227,12 @@ export default function TasksScreen() {
           completed_at: completed ? null : new Date().toISOString(),
         },
       });
-      setMessage(completed ? "Task reopened." : "Task completed.");
+      try {
+        await syncReminders();
+        setMessage(completed ? "Task reopened." : "Task completed.");
+      } catch {
+        setMessage("Task updated; reminder sync will retry.");
+      }
     } catch (error) {
       setMessage(
         error instanceof OfflineWriteError
@@ -215,7 +293,12 @@ export default function TasksScreen() {
       });
       setRepeatTask(null);
       setRepeatDraft(null);
-      setMessage("Repeat schedule saved.");
+      try {
+        await syncReminders();
+        setMessage("Repeat schedule saved.");
+      } catch {
+        setMessage("Repeat saved; reminder sync will retry.");
+      }
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -704,6 +787,22 @@ export default function TasksScreen() {
                     History
                   </AppButton>
                 ) : null}
+                {(task.due_at && !task.completed_at) || reminderFor(task.id) ? (
+                  <AppButton
+                    variant="secondary"
+                    onPress={() => void toggleReminder(task)}
+                    busy={busyId === task.id}
+                    disabled={
+                      Boolean(busyId) ||
+                      reminders.isPending ||
+                      reminders.isError
+                    }
+                  >
+                    {reminderFor(task.id)
+                      ? "Turn off reminder"
+                      : "Remind at due time"}
+                  </AppButton>
+                ) : null}
                 {!(ruleFor(task.id) && task.completed_at) ? (
                   <AppButton
                     onPress={() =>
@@ -730,6 +829,14 @@ export default function TasksScreen() {
               title="Could not load repeat schedules"
               actionLabel="Retry"
               onAction={() => void rules.refetch()}
+            />
+          ) : null}
+          {reminders.isError ? (
+            <FeedbackState
+              kind="error"
+              title="Could not load reminders"
+              actionLabel="Retry"
+              onAction={() => void reminders.refetch()}
             />
           ) : null}
           {page > 0 || tasks.data?.length === 100 ? (
