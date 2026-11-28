@@ -34,6 +34,10 @@ The owner accepted [ADR-005](decisions/ADR-005-pet-deletion.md) on 2026-11-24. I
 
 [ADR-006](decisions/ADR-006-vehicle-deletion.md) was accepted by the owner on 2026-11-24. L—17 keeps the existing restriction on individual vehicle deletion. The owner may reconsider after launch if users request it; any change needs a separate decision and implementation.
 
+## Proposed Android reminder timing decision
+
+[ADR-007](decisions/ADR-007-android-exact-alarm-permission-proposal.md) is a proposal from L—22, not an accepted change. The current Android build continues using Expo's approximate local-alarm path. Adding optional exact-alarm access requires an owner decision and separate implementation.
+
 Record consequential product and technical decisions here with date, status, context, alternatives, reasoning, and consequences. Do not label a proposal as accepted merely because it appears in documentation or code.
 
 ## Historical audit record

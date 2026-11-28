@@ -4,7 +4,7 @@ Lyfe is an early-stage life maintenance project for remembering, scheduling, and
 
 ## Status
 
-The repository contains an Expo Router app for iOS and Android, plus product and engineering documentation. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) is the approved MVP baseline. The older repository proposals are historical where they differ from it. Tasks, pets, vehicles, attachments, and the dashboard are implemented on merged branches. The L—13 recurrence migration is applied to the Lyfe development Supabase project; its hosted schema, transactional SQL, authenticated Data API, iOS simulator, and Android emulator app checks passed. L—21 is ready for review. L—14 reminders remain on a separate draft PR.
+The repository contains an Expo Router app for iOS and Android, plus product and engineering documentation. The [frozen Architecture v1.0](https://app.notion.com/p/41935ab73db381e585e8f6102f0991fc?pvs=204) is the approved MVP baseline. The older repository proposals are historical where they differ from it. Tasks, pets, vehicles, attachments, the dashboard, recurrence, and local reminders are merged. The recurrence and reminder migrations are applied to the Lyfe development Supabase project; hosted and native verification results are in [the roadmap](docs/ROADMAP.md). [L—22](docs/L22_ANDROID_REMINDER_LATENCY.md) investigates late Android local reminders without changing the production adapter.
 
 ## Start here
 
